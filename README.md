@@ -75,8 +75,10 @@
 
 ### 方式一：直接装 APK
 
-去 [Releases](../../releases) 下载最新 APK，传到手机安装。
+去 **[Releases](https://github.com/johnsonpanq-ctrl/shouzhe/releases)** 下载最新 APK，传到手机安装。
 
+> ⚠️ 目前的 APK 是 **debug 签名**，适合自用与尝鲜，不适合作为正式发布产物。
+>
 > **安装时若提示"未知来源"或 Play Protect 风险提示，是正常的** —— 本 App 需要自启动、
 > 精确闹钟、通知等权限来保证提醒准时。确认后继续安装即可。
 
@@ -85,12 +87,15 @@
 需要 JDK 17、Android SDK（platform 35 / build-tools 35.0.0）。
 
 ```bash
-git clone <repo>
+git clone https://github.com/johnsonpanq-ctrl/shouzhe.git
 cd shouzhe
 echo "sdk.dir=/path/to/Android/Sdk" > local.properties
 ./gradlew :app:assembleDebug
 # 产物：app/build/outputs/apk/debug/app-debug.apk
 ```
+
+> 首次构建会下载依赖；`app/src/main/assets/asr/` 里的 24MB 离线语音模型已在仓库内，
+> 无需额外下载。
 
 ---
 

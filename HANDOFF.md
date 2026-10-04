@@ -164,26 +164,31 @@ ModelGateway.recognizeReceipt（OpenAI 兼容 vision）、设置页「识图模�
 ## 八、开源发布状态（2026-10-04）
 
 **仓库已上线：https://github.com/johnsonpanq-ctrl/shouzhe**（public，Apache-2.0）
+**v0.9.0 Release 已发布：https://github.com/johnsonpanq-ctrl/shouzhe/releases/tag/v0.9.0**
 
 | 项 | 值 |
 |---|---|
 | 账号 | `johnsonpanq-ctrl`（凭据在 `~/.git-credentials`，`credential.helper=store` **明文存储**） |
 | 分支 | `main`（本地 `master` 已改名对齐） |
+| 仓库级 git 身份 | 已设 `johnsonpanq-ctrl <johnson.panq@gmail.com>`（之前每次 commit 靠 `-c` 临时传，打 tag 时暴露了问题） |
 | 已推内容 | 源码 130 个文件 + 全部文档 + LICENSE + 24MB 语音模型 |
+| Release | tag `v0.9.0` + 附件 `shouzhe-v0.9.0-debug.apk`（102.2MB） |
 | topics | android / kotlin / jetpack-compose / byok / local-first / note-taking / expense-tracker / room / offline-first / openai-compatible |
-| 未做 | **GitHub Releases（APK 还没有发布入口）** |
 
-**已知遗留**：
-1. **APK 还没发 Releases** —— README 里写的"去 Releases 下载"目前是空的
-2. **仓库描述第一次推时中文变乱码**（`???`），已用 UTF-8 字节显式构造 JSON 修正。
-   教训：PowerShell 调 GitHub API 传中文，必须 `[System.Text.Encoding]::UTF8.GetBytes(json)` 再发，
-   不能直接传字符串
-3. `tools/__pycache__/make_splash_logo.cpython-312.pyc` 被误提交了，
-   应加进 `.gitignore` 并移除（小问题，不影响使用）
+**⚠️ Release 附件命名规则（踩过坑）**：
+APK 附件**必须用纯 ASCII 文件名**。第一次传 `收这吧-v0.9.0-debug.apk`，
+GitHub 解出来的名字变成 `-v0.9.0-debug.apk`（中文被吃掉），只能删掉重传。
+GitHub 的 asset 上传接口对 URL 编码的中文支持有问题，**别在 asset 名里用中文**。
 
 **推送时的坑**：用 API 建仓库时带了 `license_template=apache-2.0`，
 GitHub 会自动生成一个 "Initial commit"（含 LICENSE），导致首次 push 被拒。
 处理方式：`git pull --no-rebase --allow-unrelated-histories` 合并，**不要强推**。
+
+**API 传中文的坑**：PowerShell 调 GitHub API 传中文，必须
+`[System.Text.Encoding]::UTF8.GetBytes(json)` 显式转字节再发；
+直接传字符串会让仓库描述变成 `???`。`Get-Content -Raw` 拿到的是带 PSPath 的对象，
+要 `ConvertTo-Json` 前先 `[string]` 强转，否则整个对象被序列化 → 422。
+另外 `HttpWebRequest.UserAgent` 只能用属性赋值，不能 `Headers.Add`。
 
 ---
 
