@@ -47,6 +47,10 @@ tools/icon-*
 *.db-shm
 backup-*.db
 
+# Python 字节码缓存（tools/ 下跑过脚本就会生成）
+__pycache__/
+*.pyc
+
 # 注意：app/src/main/assets/asr/*.onnx（约 24MB 离线语音模型）**有意入库** ——
 # 它是构建必需项，缺失会导致 assembleDebug 失败，且不含任何用户数据或密钥。
 # APK 本身走 Releases，仓库因此保持在 ~30MB 量级。

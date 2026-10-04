@@ -161,7 +161,33 @@ ModelGateway.recognizeReceipt（OpenAI 兼容 vision）、设置页「识图模�
 
 ---
 
-## 八、v0.7.0 / v0.8.0 / v0.9.0 新增文件清单
+## 八、开源发布状态（2026-10-04）
+
+**仓库已上线：https://github.com/johnsonpanq-ctrl/shouzhe**（public，Apache-2.0）
+
+| 项 | 值 |
+|---|---|
+| 账号 | `johnsonpanq-ctrl`（凭据在 `~/.git-credentials`，`credential.helper=store` **明文存储**） |
+| 分支 | `main`（本地 `master` 已改名对齐） |
+| 已推内容 | 源码 130 个文件 + 全部文档 + LICENSE + 24MB 语音模型 |
+| topics | android / kotlin / jetpack-compose / byok / local-first / note-taking / expense-tracker / room / offline-first / openai-compatible |
+| 未做 | **GitHub Releases（APK 还没有发布入口）** |
+
+**已知遗留**：
+1. **APK 还没发 Releases** —— README 里写的"去 Releases 下载"目前是空的
+2. **仓库描述第一次推时中文变乱码**（`???`），已用 UTF-8 字节显式构造 JSON 修正。
+   教训：PowerShell 调 GitHub API 传中文，必须 `[System.Text.Encoding]::UTF8.GetBytes(json)` 再发，
+   不能直接传字符串
+3. `tools/__pycache__/make_splash_logo.cpython-312.pyc` 被误提交了，
+   应加进 `.gitignore` 并移除（小问题，不影响使用）
+
+**推送时的坑**：用 API 建仓库时带了 `license_template=apache-2.0`，
+GitHub 会自动生成一个 "Initial commit"（含 LICENSE），导致首次 push 被拒。
+处理方式：`git pull --no-rebase --allow-unrelated-histories` 合并，**不要强推**。
+
+---
+
+## 九、v0.7.0 / v0.8.0 / v0.9.0 新增文件清单
 
 | 文件 | 作用 |
 |---|---|
@@ -178,7 +204,7 @@ ModelGateway.recognizeReceipt（OpenAI 兼容 vision）、设置页「识图模�
 
 ---
 
-## 九、给新会话的一句话
+## 十、给新会话的一句话
 
 **这是个"宁可少做功能，也要不丢数据、不记错账、不放假按钮"的项目。**
 遇到取舍选更保守的方案；被质疑先实测再回应；文档已齐（AGENTS.md 有全部禁忌），别重新发明轮子。
