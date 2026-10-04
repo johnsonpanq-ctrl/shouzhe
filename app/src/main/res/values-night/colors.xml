@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI-SPEC v5 深色色板 —— 深色模式下不闪白 -->
+    <color name="app_bg">#0E1116</color>
+    <color name="splash_bg">#0E1116</color>
+    <color name="brand">#3DDC84</color>
+</resources>

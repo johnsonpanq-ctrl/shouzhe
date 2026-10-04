@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      启动页主题。
+      要点：
+      1) 背景色用设计色板（不是默认白），深色模式不闪白
+      2) 用单色前景（不带绿底的纯符号），符合启动页规范
+      3) postSplashScreenTheme 指向真正的应用主题，启动页结束后自动切换
+    -->
+    <style name="Theme.Shouzhe.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
+        <item name="postSplashScreenTheme">@style/Theme.Shouzhe</item>
+    </style>
+
+    <style name="Theme.Shouzhe" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/app_bg</item>
+    </style>
+</resources>

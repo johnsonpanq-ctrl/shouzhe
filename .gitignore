@@ -1,0 +1,52 @@
+# 收着 (ShouZhe) — 忽略规则
+
+# 沙箱探测残留（无内容，可安全删除）
+.dsh-probe
+.dsh-probe2
+
+# 密钥与本地配置（绝不入库）
+secrets.properties
+local.properties
+*.keystore
+*.jks
+
+# 构建产物
+.gradle/
+build/
+app/build/
+.kotlin/
+captures/
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+
+# ---- 开源发布补充（2026-10-04） ----
+
+# 图标制作过程的临时产物（tools/*.png 等），最终图标在 app/src/main/res/mipmap/
+# 保留 make_icon.py 与 check_db*.py 这些脚本，删掉它们的输出图
+tools/*.png
+tools/icon-*
+
+# 旧版本 APK —— 走 GitHub Releases 发版，不进仓库历史
+收这吧-*.apk
+
+# 本地导出的数据库快照（调试用，绝不入库）
+*.db
+*.db-wal
+*.db-shm
+backup-*.db
+
+# 注意：app/src/main/assets/asr/*.onnx（约 24MB 离线语音模型）**有意入库** ——
+# 它是构建必需项，缺失会导致 assembleDebug 失败，且不含任何用户数据或密钥。
+# APK 本身走 Releases，仓库因此保持在 ~30MB 量级。

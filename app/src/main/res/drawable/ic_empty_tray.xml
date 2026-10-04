@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 空状态图标：一只张开承接的托盘，与 App 图标同源 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+
+    <!-- 承接的弧线 -->
+    <path
+        android:pathData="M10,22 Q10,31 20,31 Q30,31 30,22"
+        android:strokeColor="#FF3DDC84"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- 上方落下的点 -->
+    <path
+        android:pathData="M20,12 m-3.2,0 a3.2,3.2 0 1,0 6.4,0 a3.2,3.2 0 1,0 -6.4,0"
+        android:fillColor="#FF3DDC84" />
+</vector>

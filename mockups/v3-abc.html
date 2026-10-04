@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>收着 · 三方向对比</title>
+<style>
+:root{--bg:#E3E5E0;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);padding:40px 44px 48px;
+  font-family:"DengXian","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;}
+.board{display:flex;gap:44px;}
+.cell .cap{font-family:Consolas,monospace;font-size:11.5px;color:#5E6560;margin-top:10px;line-height:1.6;}
+.ph{width:360px;height:760px;position:relative;overflow:hidden;
+    box-shadow:0 12px 30px rgba(20,24,20,.18);}
+
+/* ============ A 绿格账本 ============ */
+.a{--paper:#EEF2EC;--grid:#C6D5C0;--ink:#141814;--ink2:#4C554E;--ink3:#87908A;--green:#2E6B4F;background:var(--paper);color:var(--ink);}
+.a .sb{height:30px;display:flex;justify-content:space-between;padding:0 20px;align-items:center;
+  font-family:Consolas,monospace;font-size:10.5px;color:var(--ink3);}
+.a .hd{display:flex;align-items:baseline;padding:6px 20px 12px;}
+.a .hd b{font-size:27px;font-weight:900;letter-spacing:1px;}
+.a .hd span{margin-left:auto;font-family:Consolas,monospace;font-size:10px;color:var(--ink3);}
+.a .tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--grid);}
+.a .tabs i{font-style:normal;font-size:13.5px;color:var(--ink3);padding:0 12px 9px;margin-right:4px;position:relative;}
+.a .tabs i:first-child{padding-left:0;}
+.a .tabs i.on{color:var(--ink);font-weight:700;}
+.a .tabs i.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--green);}
+/* 账页：横向绿格 + 金额栏竖向绿格 */
+.a .sheet{position:relative;}
+.a .sheet::before{content:"";position:absolute;top:0;bottom:0;right:96px;width:1px;background:var(--grid);}
+.a .row{display:flex;padding:14px 0 14px 20px;border-bottom:1px solid var(--grid);min-height:84px;}
+.a .main{flex:1;padding-right:12px;min-width:0;}
+.a .lb{font-size:10px;color:var(--ink3);letter-spacing:1px;margin-bottom:5px;}
+.a .tt{font-size:15.5px;font-weight:700;line-height:1.4;}
+.a .sub{font-size:12px;color:var(--ink2);margin-top:5px;line-height:1.5;}
+.a .col{width:96px;padding-right:16px;text-align:right;font-family:Consolas,monospace;}
+.a .col .tm{font-size:10px;color:var(--ink3);}
+.a .col .amt{font-size:16px;font-weight:700;margin-top:6px;}
+.a .col .amt.g{color:var(--green);}
+.a .ok{display:inline-block;margin-top:9px;background:var(--green);color:#F2F7F3;
+  font-size:12px;font-weight:700;padding:6px 16px;border-radius:2px;}
+.a .fab{position:absolute;right:18px;bottom:22px;width:54px;height:54px;border-radius:50%;
+  background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:300;}
+
+/* ============ B 热敏小票 ============ */
+.b{background:#FFFFFF;color:#0B0B0B;}
+.b .zig{height:9px;background:
+  linear-gradient(135deg,#fff 4.5px,transparent 0) 0 0/9px 9px repeat-x,
+  linear-gradient(-135deg,#fff 4.5px,transparent 0) 4.5px 0/9px 9px repeat-x;}
+.b .zig.top{transform:rotate(180deg);}
+.b .inner{padding:4px 22px 0;}
+.b .sb{height:26px;display:flex;justify-content:space-between;align-items:center;
+  font-family:Consolas,monospace;font-size:10px;color:#0B0B0B;}
+.b .head{text-align:center;padding:10px 0 12px;border-bottom:1.5px dashed #0B0B0B;}
+.b .head b{font-family:Consolas,monospace;font-size:17px;font-weight:700;letter-spacing:3px;display:block;}
+.b .head span{font-family:Consolas,monospace;font-size:9.5px;letter-spacing:1px;display:block;margin-top:5px;}
+.b .bars{display:flex;justify-content:center;gap:2px;margin-top:9px;height:22px;align-items:stretch;}
+.b .bars i{background:#0B0B0B;display:block;}
+.b .row{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px dashed #9A9A9A;}
+.b .l{min-width:0;}
+.b .l .tt{font-size:14.5px;font-weight:700;line-height:1.4;}
+.b .l .sub{font-family:Consolas,monospace;font-size:10px;color:#555;margin-top:5px;}
+.b .r{text-align:right;font-family:Consolas,monospace;white-space:nowrap;}
+.b .r .amt{font-size:15px;font-weight:700;}
+.b .r .tm{font-size:9.5px;color:#555;margin-top:6px;}
+.b .conf{margin-top:8px;background:#0B0B0B;color:#fff;font-family:Consolas,monospace;
+  font-size:11px;padding:5px 12px;display:inline-block;}
+.b .foot{padding:14px 0 0;text-align:center;}
+.b .foot .bars{height:30px;}
+.b .foot span{font-family:Consolas,monospace;font-size:9.5px;letter-spacing:2px;display:block;margin-top:8px;}
+.b .fab{position:absolute;right:18px;bottom:26px;width:54px;height:54px;border-radius:50%;
+  background:#0B0B0B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:300;}
+
+/* ============ C v2 换血 ============ */
+.c{--paper:#F3F4F1;--ink:#1A211E;--ink2:#55605C;--ink3:#8B948F;--rule:#D8DAD3;--green:#2E6B4F;
+   background:var(--paper);color:var(--ink);}
+.c .sb{height:30px;display:flex;justify-content:space-between;padding:0 20px;align-items:center;
+  font-family:Consolas,monospace;font-size:10.5px;color:var(--ink3);}
+.c .hd{display:flex;align-items:center;padding:6px 20px 12px;}
+.c .hd b{font-size:26px;font-weight:900;letter-spacing:1px;}
+.c .hd .gear{margin-left:auto;width:30px;height:30px;border:1.4px solid var(--ink2);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;}
+.c .hd .gear i{width:9px;height:9px;border:1.4px solid var(--ink2);border-radius:50%;}
+.c .tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--rule);}
+.c .tabs i{font-style:normal;font-size:13.5px;color:var(--ink3);padding:0 12px 9px;margin-right:4px;position:relative;}
+.c .tabs i:first-child{padding-left:0;}
+.c .tabs i.on{color:var(--ink);font-weight:700;}
+.c .tabs i.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--green);}
+.c .row{display:flex;gap:12px;padding:15px 20px;border-bottom:1px solid var(--rule);min-height:80px;align-items:flex-start;}
+.c .lb{flex:0 0 auto;font-size:10px;color:var(--ink3);letter-spacing:1px;margin-top:4px;}
+.c .main{flex:1;min-width:0;}
+.c .tt{font-size:15.5px;font-weight:700;line-height:1.4;}
+.c .sub{font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.55;}
+.c .amt{font-family:Consolas,monospace;font-size:17px;font-weight:700;color:var(--green);margin-top:4px;}
+.c .amt small{font-size:10.5px;font-weight:400;color:var(--ink3);margin-left:6px;font-family:"DengXian",sans-serif;}
+.c .tm{font-family:Consolas,monospace;font-size:10px;color:var(--ink3);margin-top:4px;white-space:nowrap;}
+.c .ok{display:inline-block;margin-top:9px;background:var(--green);color:#F2F7F3;
+  font-size:12px;font-weight:700;padding:6px 16px;border-radius:2px;letter-spacing:1px;}
+.c .gh{display:inline-block;margin-top:9px;margin-left:8px;border:1px solid var(--rule);color:var(--ink2);
+  font-size:12px;padding:6px 13px;border-radius:2px;}
+.c .fab{position:absolute;right:18px;bottom:22px;width:54px;height:54px;border-radius:50%;
+  background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:300;}
+</style>
+</head>
+<body>
+<div class="board">
+
+<!-- A 绿格账本 -->
+<div class="cell"><div class="ph a">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b><span>账页 01</span></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="sheet">
+    <div class="row"><div class="main">
+        <div class="lb">文章 · 抽取中</div>
+        <div class="tt" style="color:var(--ink3);font-weight:400;">正在收着…</div>
+        <div class="sub" style="font-family:Consolas,monospace;font-size:10px;">mp.weixin.qq.com</div>
+      </div><div class="col"><div class="tm">2s</div></div></div>
+    <div class="row"><div class="main">
+        <div class="lb">账目 · 待确认</div>
+        <div class="tt">烧饼</div>
+        <span class="ok">确认</span>
+      </div><div class="col"><div class="tm">10:22</div><div class="amt g">1.00</div></div></div>
+    <div class="row"><div class="main">
+        <div class="lb">待办</div>
+        <div class="tt">明天去老丈人家</div>
+        <div class="sub">明天 10:00 提醒 · 今晚 20:00 再提一次</div>
+      </div><div class="col"><div class="tm">10:21</div></div></div>
+    <div class="row"><div class="main">
+        <div class="lb">文章</div>
+        <div class="tt">Flutter 状态管理：三种方案怎么选</div>
+        <div class="sub">小项目用 Provider 足够，中大型项目优先 Riverpod。</div>
+      </div><div class="col"><div class="tm">3h</div></div></div>
+    <div class="row"><div class="main">
+        <div class="lb">账目</div>
+        <div class="tt">给车加油</div>
+      </div><div class="col"><div class="tm">昨天</div><div class="amt">320.00</div></div></div>
+  </div>
+  <div class="fab">＋</div>
+</div><div class="cap">A / 绿格账本 — 冷绿纸 + 通栏绿格 + 金额栏竖格<br>等宽数字右对齐入账栏；无印章无楷体</div></div>
+
+<!-- B 热敏小票 -->
+<div class="cell"><div class="ph b">
+  <div class="zig top"></div>
+  <div class="inner">
+    <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+    <div class="head"><b>收 着</b><span>RECEIPT NO.0042 / 2026-10-03</span>
+      <div class="bars"><i style="width:2px"></i><i style="width:1px"></i><i style="width:3px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:4px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:1px"></i><i style="width:3px"></i><i style="width:2px"></i><i style="width:1px"></i><i style="width:4px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:3px"></i><i style="width:1px"></i><i style="width:2px"></i></div>
+    </div>
+    <div class="row"><div class="l"><div class="tt">烧饼</div><div class="sub">餐饮 / 待确认</div><span class="conf">确认</span></div>
+      <div class="r"><div class="amt">1.00</div><div class="tm">10:22</div></div></div>
+    <div class="row"><div class="l"><div class="tt">明天去老丈人家</div><div class="sub">REMIND 10-04 10:00 / 20:00</div></div>
+      <div class="r"><div class="tm">10:21</div></div></div>
+    <div class="row"><div class="l"><div class="tt">Flutter 状态管理：三种方案怎么选</div><div class="sub">mp.weixin.qq.com / 3240 字</div></div>
+      <div class="r"><div class="tm">3h</div></div></div>
+    <div class="row"><div class="l"><div class="tt">给车加油</div><div class="sub">交通</div></div>
+      <div class="r"><div class="amt">320.00</div><div class="tm">昨天</div></div></div>
+    <div class="foot">
+      <div class="bars"><i style="width:1px"></i><i style="width:3px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:1px"></i><i style="width:4px"></i><i style="width:2px"></i><i style="width:1px"></i><i style="width:3px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:1px"></i><i style="width:4px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:3px"></i><i style="width:1px"></i><i style="width:1px"></i><i style="width:2px"></i><i style="width:4px"></i><i style="width:1px"></i><i style="width:2px"></i></div>
+      <span>谢 谢 使 用 / 数 据 只 在 本 机</span>
+    </div>
+  </div>
+  <div class="fab">＋</div>
+  <div class="zig" style="position:absolute;left:0;right:0;bottom:0;"></div>
+</div><div class="cap">B / 热敏小票 — 纯黑白 + 撕口齿边 + 条码 + 虚线分栏<br>全等宽打印体；机械、高对比、零装饰</div></div>
+
+<!-- C v2 换血 -->
+<div class="cell"><div class="ph c">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b><span class="gear"><i></i></span></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="row"><span class="lb">文章</span><div class="main">
+      <div class="tt" style="color:var(--ink3);font-weight:400;">正在收着…</div>
+      <div class="sub" style="font-family:Consolas,monospace;font-size:10px;">mp.weixin.qq.com</div>
+    </div><div class="tm">2s</div></div>
+  <div class="row"><span class="lb">账目</span><div class="main">
+      <div class="tt">烧饼</div>
+      <div class="amt">¥1.00<small>餐饮 · 待确认</small></div>
+      <span class="ok">确认</span><span class="gh">改一下</span>
+    </div></div>
+  <div class="row"><span class="lb">待办</span><div class="main">
+      <div class="tt">明天去老丈人家</div>
+      <div class="sub">明天 10:00 提醒 · 今晚 20:00 再提一次</div>
+    </div><div class="tm">10:21</div></div>
+  <div class="row"><span class="lb">文章</span><div class="main">
+      <div class="tt">Flutter 状态管理：三种方案怎么选</div>
+      <div class="sub">小项目用 Provider 足够，中大型项目优先 Riverpod。</div>
+    </div><div class="tm">3h</div></div>
+  <div class="row"><span class="lb">账目</span><div class="main">
+      <div class="tt">给车加油</div>
+      <div class="amt">¥320.00<small>交通</small></div>
+    </div><div class="tm">昨天</div></div>
+  <div class="fab">＋</div>
+</div><div class="cap">C / v2 换血 — 保留账页列表，删全部印章、楷体改特粗等线<br>强调色朱红改账本绿；类型改纯文字小标</div></div>
+
+</div>
+</body>
+</html>

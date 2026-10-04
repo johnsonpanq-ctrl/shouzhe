@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>收着 · 完整原型 v5</title>
+<style>
+/* ============ 浅色：净亮 ============ */
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --surfaceAlt:#F0F2F5; --surfaceDeep:#E8EBEF;
+  --ink:#17202A; --ink2:#5A6675; --ink3:#9AA3AF;
+  --line:#E8EBEF; --brand:#3478F6; --brandSoft:#E8F0FE; --onBrand:#FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#E2E4DF;padding:40px 44px 48px;
+  font-family:"DengXian","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;}
+.board{display:grid;grid-template-columns:repeat(3,360px);gap:38px 40px;}
+.cap{font-family:Consolas,monospace;font-size:11px;color:#5A615C;margin-top:10px;line-height:1.6;}
+
+.ph{width:360px;height:720px;position:relative;overflow:hidden;background:var(--bg);
+  color:var(--ink);box-shadow:0 10px 28px rgba(20,24,20,.16);}
+
+/* 深色：暗夜冷（结构与浅色完全一致，仅换色板） */
+.dark{--bg:#0E1116;--surface:#151A21;--surfaceAlt:#1A2028;--surfaceDeep:#1E242C;
+  --ink:#E6EAF0;--ink2:#8A94A3;--ink3:#6B7684;
+  --line:#1E242C;--brand:#3DDC84;--brandSoft:#12291D;--onBrand:#08130C;}
+
+.sb{height:28px;display:flex;justify-content:space-between;align-items:center;
+  padding:0 18px;font-family:Consolas,monospace;font-size:10px;color:var(--ink3);}
+.hd{padding:8px 18px 12px;display:flex;align-items:center;}
+.hd b{font-size:24px;font-weight:700;letter-spacing:.5px;}
+.hd .badge{margin-left:auto;background:var(--brandSoft);color:var(--brand);
+  font-size:12px;font-weight:600;padding:6px 13px;border-radius:16px;}
+.tabs{display:flex;gap:8px;padding:0 18px 12px;}
+.tabs i{font-style:normal;font-size:12.5px;padding:6px 12px;border-radius:15px;
+  background:var(--surfaceDeep);color:var(--ink2);}
+.tabs i.on{background:var(--brand);color:var(--onBrand);font-weight:600;}
+
+.list{padding:0 14px;}
+.card{background:var(--surface);border-radius:14px;padding:14px;margin-bottom:9px;
+  box-shadow:0 1px 2px rgba(23,32,42,.05),0 6px 16px -10px rgba(23,32,42,.16);}
+.dark .card{border:1px solid var(--line);box-shadow:none;}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.tt{font-size:15.5px;font-weight:600;line-height:1.4;}
+.sb2{font-size:12.5px;color:var(--ink2);margin-top:5px;line-height:1.55;}
+.tm{font-family:Consolas,monospace;font-size:10px;color:var(--ink3);margin-top:5px;white-space:nowrap;}
+.amt{font-family:Consolas,monospace;font-size:17px;font-weight:700;margin-top:4px;}
+.amt.b{color:var(--brand);}
+.tag{display:inline-block;font-size:10.5px;color:var(--ink2);background:var(--surfaceAlt);
+  padding:2px 8px;border-radius:6px;margin-left:8px;}
+.btn{display:inline-block;margin-top:10px;background:var(--brand);color:var(--onBrand);
+  font-size:12.5px;font-weight:600;padding:8px 20px;border-radius:9px;}
+.btn.g{background:var(--surfaceAlt);color:var(--ink2);margin-left:8px;}
+.fab{position:absolute;right:16px;bottom:20px;width:52px;height:52px;border-radius:50%;
+  background:var(--brand);color:var(--onBrand);display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:300;box-shadow:0 6px 16px rgba(52,120,246,.32);}
+.dark .fab{box-shadow:0 6px 18px rgba(61,220,132,.24);}
+.sk{height:3px;background:var(--surfaceAlt);border-radius:2px;margin-top:9px;overflow:hidden;position:relative;}
+.sk i{position:absolute;left:0;top:0;bottom:0;width:38%;background:var(--brand);border-radius:2px;}
+
+/* 详情 */
+.dt{padding:0 18px;}
+.back{font-size:16px;color:var(--ink2);padding:10px 0 12px;}
+.dt h2{font-size:22px;font-weight:700;line-height:1.42;letter-spacing:.3px;}
+.meta{font-family:Consolas,monospace;font-size:10px;color:var(--ink3);margin:9px 0 15px;}
+.sumbox{background:var(--brandSoft);border-radius:12px;padding:13px 14px;margin-bottom:14px;}
+.sumbox .h{font-size:12px;font-weight:700;color:var(--brand);margin-bottom:8px;}
+.sumbox p{font-size:13px;line-height:1.7;color:var(--ink);}
+.dark .sumbox p{color:var(--ink2);}
+.chips{display:flex;gap:7px;margin-bottom:15px;}
+.chips span{font-size:11px;color:var(--ink2);background:var(--surfaceAlt);
+  padding:4px 10px;border-radius:14px;}
+.rule{height:1px;background:var(--line);margin-bottom:15px;}
+.body p{font-size:15px;line-height:1.85;margin-bottom:14px;}
+
+/* 设置 */
+.srow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);}
+.box{width:20px;height:20px;border-radius:6px;border:1.6px solid var(--ink3);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--onBrand);}
+.box.on{background:var(--brand);border-color:var(--brand);}
+.srow .nm{flex:1;font-size:14.5px;font-weight:600;}
+.srow .st{font-family:Consolas,monospace;font-size:11px;color:var(--ink3);}
+.srow .go{font-size:12.5px;font-weight:600;color:var(--brand);}
+.note{margin-top:16px;background:var(--surfaceAlt);border-radius:12px;padding:13px 14px;
+  font-size:12.5px;line-height:1.7;color:var(--ink2);}
+.note b{display:block;color:var(--ink);margin-bottom:5px;font-size:12.5px;}
+.note.brand{background:var(--brandSoft);}
+.note.brand b{color:var(--brand);}
+
+/* 空状态 */
+.empty{position:absolute;inset:28px 0 0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;padding:0 40px;}
+.empty .ic{width:74px;height:74px;border-radius:22px;background:var(--brandSoft);
+  display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:22px;}
+.empty h4{font-size:18px;font-weight:700;margin-bottom:12px;}
+.empty p{font-size:13px;color:var(--ink2);line-height:2;}
+
+/* 浮层 */
+.scrim{position:absolute;inset:0;background:rgba(15,20,26,.45);}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);
+  padding:0 18px 24px;border-radius:20px 20px 0 0;}
+.grab{width:38px;height:4px;border-radius:2px;background:var(--surfaceDeep);margin:10px auto 16px;}
+.inp{background:var(--surface);border-radius:12px;padding:13px 14px;font-size:16px;
+  box-shadow:0 1px 2px rgba(23,32,42,.05);border:1.6px solid var(--brand);}
+.preview{margin-top:12px;background:var(--surface);border-radius:12px;padding:13px 14px;
+  box-shadow:0 1px 2px rgba(23,32,42,.05);}
+.dark .preview{border:1px solid var(--line);}
+.preview .lb{font-size:11px;color:var(--ink3);margin-bottom:9px;}
+.preview .pv{display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600;}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--brand);}
+.preview .pm{font-family:Consolas,monospace;font-size:11.5px;color:var(--ink2);margin:7px 0 0 18px;}
+.sheet .acts{display:flex;gap:10px;margin-top:18px;align-items:center;}
+.mic{width:46px;height:46px;border-radius:50%;background:var(--surface);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;border:1.4px solid var(--surfaceDeep);}
+.mic i{width:9px;height:15px;border:1.5px solid var(--ink2);border-radius:5px;display:block;}
+.sheet .btn.big{flex:1;text-align:center;padding:14px 0;font-size:15px;margin:0;border-radius:12px;}
+</style>
+</head>
+<body>
+<div class="board">
+
+<!-- ① 收件箱 -->
+<div><div class="ph">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b><span class="badge">待确认 1</span></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="list">
+    <div class="card"><div class="tt" style="color:var(--ink3);font-weight:400;">正在收着…</div>
+      <div class="sb2" style="font-family:Consolas,monospace;font-size:10.5px;">mp.weixin.qq.com</div>
+      <div class="sk"><i></i></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">烧饼</div><div class="amt b">¥1.00</div></div>
+        <div class="tm">10:22</div></div>
+      <span class="tag">餐饮</span>
+      <div><span class="btn">确认</span><span class="btn g">改一下</span></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">明天去老丈人家</div>
+          <div class="sb2">明天 10:00 提醒 · 今晚 20:00 再提一次</div></div>
+        <div class="tm">10:21</div></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">Flutter 状态管理：三种方案怎么选</div>
+          <div class="sb2">小项目用 Provider 足够，中大型项目优先 Riverpod，BLoC 适合已有分层规范的团队。</div></div>
+        <div class="tm">3h</div></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">给车加油</div><div class="amt">¥320.00</div></div>
+        <div class="tm">昨天</div></div>
+      <span class="tag">交通</span></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">媳妇说：周六别安排别的</div>
+          <div class="sb2">语音记的</div></div>
+        <div class="tm">昨天</div></div></div>
+  </div>
+  <div class="fab">＋</div>
+</div><div class="cap">01 / 收件箱 — 白卡片列表，待确认置顶，右上角角标提醒</div></div>
+
+<!-- ② 快速录入 -->
+<div><div class="ph">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b><span class="badge">待确认 1</span></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="list">
+    <div class="card"><div class="row"><div><div class="tt">明天去老丈人家</div>
+      <div class="sb2">明天 10:00 提醒</div></div><div class="tm">10:21</div></div></div>
+    <div class="card"><div class="row"><div><div class="tt">烧饼</div>
+      <div class="amt b">¥1.00</div></div><div class="tm">10:22</div></div></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <div class="inp">明天去老丈人家</div>
+    <div class="preview">
+      <div class="lb">收着理解为</div>
+      <div class="pv"><span class="dot"></span>一件待办</div>
+      <div class="pm">明天 10:00 → 今晚 20:00 先提一次</div>
+    </div>
+    <div class="acts"><span class="mic"><i></i></span><span class="btn big">收着</span></div>
+  </div>
+</div><div class="cap">02 / 快速录入 — 边写边看「收着理解为」，错了立刻改</div></div>
+
+<!-- ③ 文章详情 -->
+<div><div class="ph">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="dt">
+    <div class="back">←</div>
+    <h2>Flutter 状态管理：三种方案怎么选</h2>
+    <div class="meta">移动开发笔记 / 2026-10-03 / 3240 字</div>
+    <div class="sumbox"><div class="h">AI 摘要</div>
+      <p>对比 Provider、Riverpod、BLoC 的适用场景与迁移成本：小项目用 Provider 足够，中大型项目优先 Riverpod，BLoC 适合已有严格分层规范的团队。</p></div>
+    <div class="chips"><span>Flutter</span><span>状态管理</span><span>移动开发</span></div>
+    <div class="rule"></div>
+    <div class="body">
+      <p>状态管理是 Flutter 开发里最容易被过度设计的一环。不少团队在项目初期就引入重量级方案，复杂度上去了，可维护性反而下降。</p>
+      <p>先看 Provider：学习曲线最平缓，本质上是对 InheritedWidget 的一层封装……</p>
+    </div>
+  </div>
+</div><div class="cap">03 / 文章详情 — 摘要块置顶，正文长阅读行高 1.85</div></div>
+
+<!-- ④ 后台设置 -->
+<div><div class="ph">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="dt">
+    <div class="back">←</div>
+    <h2>后台运行</h2>
+    <div class="meta">提醒要准时，需要这 4 个开关</div>
+    <div class="srow"><span class="box on">✓</span><span class="nm">自启动</span><span class="st">已开启</span></div>
+    <div class="srow"><span class="box on">✓</span><span class="nm">省电策略</span><span class="st">无限制</span></div>
+    <div class="srow"><span class="box"></span><span class="nm">通知设为重要</span><span class="go">去开启</span></div>
+    <div class="srow"><span class="box"></span><span class="nm">锁定最近任务</span><span class="go">看步骤</span></div>
+    <div class="note brand"><b>检测到 红米 K80 · HyperOS</b>以上步骤按这台手机写。跳转失败时会改成图文步骤。</div>
+    <div class="note"><b>上次提醒晚了 2 分钟</b>偏差偏大，建议把省电策略设为无限制。</div>
+  </div>
+</div><div class="cap">04 / 后台运行 — 逐项打勾可跳转，提醒偏差可见</div></div>
+
+<!-- ⑤ 空状态 -->
+<div><div class="ph">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="empty">
+    <div class="ic">📥</div>
+    <h4>还没收着东西</h4>
+    <p>看到好文章，分享给「收着」<br>想到一件事，说一句话</p>
+  </div>
+  <div class="fab">＋</div>
+</div><div class="cap">05 / 空状态 — 两句话教会用户怎么用</div></div>
+
+<!-- ⑥ 深色 -->
+<div><div class="ph dark">
+  <div class="sb"><span>22:47</span><span>5G 63%</span></div>
+  <div class="hd"><b>收着</b><span class="badge">待确认 1</span></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="list">
+    <div class="card"><div class="tt" style="color:var(--ink3);font-weight:400;">正在收着…</div>
+      <div class="sb2" style="font-family:Consolas,monospace;font-size:10.5px;">mp.weixin.qq.com</div>
+      <div class="sk"><i></i></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">烧饼</div><div class="amt b">¥1.00</div></div>
+        <div class="tm">10:22</div></div>
+      <span class="tag">餐饮</span>
+      <div><span class="btn">确认</span><span class="btn g">改一下</span></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">明天去老丈人家</div>
+          <div class="sb2">明天 10:00 提醒 · 今晚 20:00 再提一次</div></div>
+        <div class="tm">10:21</div></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">Flutter 状态管理：三种方案怎么选</div>
+          <div class="sb2">小项目用 Provider 足够，中大型项目优先 Riverpod，BLoC 适合已有分层规范的团队。</div></div>
+        <div class="tm">3h</div></div></div>
+    <div class="card"><div class="row">
+        <div><div class="tt">给车加油</div><div class="amt">¥320.00</div></div>
+        <div class="tm">昨天</div></div>
+      <span class="tag">交通</span></div>
+  </div>
+  <div class="fab">＋</div>
+</div><div class="cap">06 / 深色 — 结构完全相同，仅换色板（荧光绿品牌色）</div></div>
+
+</div>
+</body>
+</html>

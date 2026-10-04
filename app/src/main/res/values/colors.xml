@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- UI-SPEC v5 浅色色板 -->
+    <color name="app_bg">#F2F4F7</color>
+    <color name="splash_bg">#F2F4F7</color>
+    <color name="brand">#3478F6</color>
+</resources>

@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">收这吧</string>
+
+    <!-- 通知渠道 -->
+    <string name="channel_reminder_name">提醒</string>
+    <string name="channel_reminder_desc">到点提醒你该做的事</string>
+
+    <!-- 通知动作 -->
+    <string name="action_done">完成</string>
+    <string name="action_snooze">稍后</string>
+
+    <!-- 通用 -->
+    <string name="confirm">确认</string>
+    <string name="edit">改一下</string>
+    <string name="loading">正在收着…</string>
+    <string name="empty_title">还没收着东西</string>
+    <string name="empty_hint">看到好文章，分享给「收这吧」\n想到一件事，说一句话</string>
+</resources>

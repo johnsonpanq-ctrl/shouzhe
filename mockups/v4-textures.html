@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>收着 · 质感四选一</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#E2E4DF;padding:40px 44px 48px;
+  font-family:"DengXian","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;}
+.board{display:grid;grid-template-columns:repeat(2,360px);gap:40px;}
+.cap{font-family:Consolas,monospace;font-size:11.5px;color:#5A615C;margin-top:10px;line-height:1.65;}
+.ph{width:360px;height:720px;position:relative;overflow:hidden;
+  box-shadow:0 10px 28px rgba(20,24,20,.16);}
+.sb{height:28px;display:flex;justify-content:space-between;align-items:center;
+  padding:0 18px;font-family:Consolas,monospace;font-size:10px;}
+.fab{position:absolute;right:16px;bottom:20px;width:52px;height:52px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:300;}
+
+/* ================= ① 净亮 ================= */
+.v1{--bg:#F2F4F7;--card:#FFFFFF;--ink:#17202A;--sub:#6B7683;--time:#9AA3AF;
+  --brand:#3478F6;--brandSoft:#E8F0FE;background:var(--bg);color:var(--ink);}
+.v1 .sb{color:var(--time);}
+.v1 .hd{padding:8px 18px 12px;}
+.v1 .hd b{font-size:24px;font-weight:700;letter-spacing:.5px;}
+.v1 .hd .pill{margin-left:auto;background:var(--brandSoft);color:var(--brand);
+  font-size:12px;font-weight:600;padding:6px 13px;border-radius:16px;}
+.v1 .tabs{display:flex;gap:8px;padding:0 18px 12px;}
+.v1 .tabs i{font-style:normal;font-size:12.5px;padding:6px 12px;border-radius:15px;
+  background:#E8EAEE;color:var(--sub);}
+.v1 .tabs i.on{background:var(--brand);color:#fff;font-weight:600;}
+.v1 .list{padding:0 14px;}
+.v1 .card{background:var(--card);border-radius:14px;padding:14px 14px 13px;margin-bottom:9px;
+  box-shadow:0 1px 2px rgba(23,32,42,.05),0 6px 16px -10px rgba(23,32,42,.14);}
+.v1 .card .tt{font-size:15.5px;font-weight:600;line-height:1.4;}
+.v1 .card .sb2{font-size:12.5px;color:var(--sub);margin-top:5px;line-height:1.55;}
+.v1 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.v1 .amt{font-family:Consolas,monospace;font-size:17px;font-weight:700;}
+.v1 .tm{font-family:Consolas,monospace;font-size:10px;color:var(--time);margin-top:5px;}
+.v1 .tag{display:inline-block;font-size:10.5px;color:var(--sub);background:#F0F2F5;
+  padding:2px 7px;border-radius:5px;margin-left:7px;}
+.v1 .btn{display:inline-block;margin-top:10px;background:var(--brand);color:#fff;
+  font-size:12.5px;font-weight:600;padding:7px 18px;border-radius:9px;}
+.v1 .btn.g{background:#EEF1F5;color:var(--sub);margin-left:8px;}
+.v1 .fab{background:var(--brand);color:#fff;box-shadow:0 6px 16px rgba(52,120,246,.34);}
+
+/* ================= ② 雾感 ================= */
+.v2{--bg:#F6F7F5;--ink:#2B2F2C;--sub:#6E7671;--time:#9AA19B;--acc:#7A8B7F;
+  --line:#E3E6E1;background:var(--bg);color:var(--ink);}
+.v2 .sb{color:var(--time);}
+.v2 .hd{padding:10px 20px 14px;}
+.v2 .hd b{font-size:21px;font-weight:600;letter-spacing:3px;}
+.v2 .tabs{display:flex;gap:20px;padding:0 20px 10px;border-bottom:1px solid var(--line);}
+.v2 .tabs i{font-style:normal;font-size:13px;color:var(--time);position:relative;padding-bottom:9px;}
+.v2 .tabs i.on{color:var(--ink);}
+.v2 .tabs i.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;
+  height:2px;background:var(--acc);}
+.v2 .row{display:flex;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);align-items:flex-start;}
+.v2 .bar{width:3px;align-self:stretch;border-radius:2px;background:var(--acc);flex:0 0 3px;}
+.v2 .bar.g{background:#C7CEC9;}
+.v2 .m{flex:1;min-width:0;}
+.v2 .tt{font-size:15.5px;font-weight:600;line-height:1.4;}
+.v2 .sb2{font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.6;}
+.v2 .amt{font-family:Consolas,monospace;font-size:16.5px;font-weight:700;color:var(--acc);}
+.v2 .amt small{font-size:10.5px;font-weight:400;color:var(--time);margin-left:7px;
+  font-family:"DengXian",sans-serif;}
+.v2 .tm{font-family:Consolas,monospace;font-size:10px;color:var(--time);white-space:nowrap;margin-top:4px;}
+.v2 .btn{display:inline-block;margin-top:11px;border:1.4px solid var(--acc);color:var(--acc);
+  font-size:12.5px;font-weight:600;padding:7px 18px;border-radius:20px;}
+.v2 .fab{background:var(--acc);color:#fff;box-shadow:0 6px 16px rgba(122,139,127,.3);}
+
+/* ================= ③ 暗夜冷 ================= */
+.v3{--bg:#0E1116;--card:#151A21;--ink:#E6EAF0;--sub:#8A94A3;--time:#6B7684;
+  --acc:#3DDC84;--accSoft:#12291D;background:var(--bg);color:var(--ink);}
+.v3 .sb{color:var(--time);}
+.v3 .hd{padding:8px 18px 12px;}
+.v3 .hd b{font-size:23px;font-weight:700;letter-spacing:1px;}
+.v3 .hd .pill{margin-left:auto;font-family:Consolas,monospace;font-size:10.5px;
+  color:var(--acc);border:1px solid var(--acc);padding:5px 11px;border-radius:5px;}
+.v3 .tabs{display:flex;gap:7px;padding:0 18px 12px;}
+.v3 .tabs i{font-style:normal;font-size:12.5px;padding:6px 12px;border-radius:7px;
+  background:#1A2028;color:var(--sub);}
+.v3 .tabs i.on{background:var(--accSoft);color:var(--acc);font-weight:600;}
+.v3 .list{padding:0 14px;}
+.v3 .card{background:var(--card);border-radius:12px;padding:14px;margin-bottom:9px;
+  border:1px solid #1E242C;}
+.v3 .tt{font-size:15.5px;font-weight:600;line-height:1.4;}
+.v3 .sb2{font-size:12.5px;color:var(--sub);margin-top:6px;line-height:1.55;}
+.v3 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.v3 .amt{font-family:Consolas,monospace;font-size:17px;font-weight:700;color:var(--acc);}
+.v3 .tm{font-family:Consolas,monospace;font-size:10px;color:var(--time);margin-top:5px;}
+.v3 .btn{display:inline-block;margin-top:10px;background:var(--acc);color:#08130C;
+  font-size:12.5px;font-weight:700;padding:7px 18px;border-radius:6px;}
+.v3 .btn.g{background:transparent;color:var(--sub);border:1px solid #2A323C;margin-left:8px;}
+.v3 .fab{background:var(--acc);color:#08130C;box-shadow:0 6px 18px rgba(61,220,132,.26);}
+
+/* ================= ④ 色块头 ================= */
+.v4{--brand:#00B578;--ink:#17202A;--sub:#6B7683;--time:#9AA3AF;--line:#EDF0F2;
+  background:#F5F7F8;color:var(--ink);}
+.v4 .sb{color:rgba(255,255,255,.72);padding:0 18px;}
+.v4 .hero{background:var(--brand);padding:6px 18px 20px;}
+.v4 .hero b{font-size:24px;font-weight:700;color:#fff;letter-spacing:.5px;}
+.v4 .search{margin-top:14px;background:rgba(255,255,255,.22);border-radius:20px;
+  padding:10px 15px;color:rgba(255,255,255,.85);font-size:13px;}
+.v4 .tabs{display:flex;gap:8px;padding:14px 18px 4px;}
+.v4 .tabs i{font-style:normal;font-size:12.5px;padding:6px 12px;border-radius:15px;
+  background:#E9EDEF;color:var(--sub);}
+.v4 .tabs i.on{background:var(--brand);color:#fff;font-weight:600;}
+.v4 .row{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;
+  border-bottom:1px solid var(--line);}
+.v4 .ic{width:38px;height:38px;border-radius:11px;flex:0 0 38px;display:flex;
+  align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;}
+.v4 .m{flex:1;min-width:0;}
+.v4 .tt{font-size:15.5px;font-weight:600;line-height:1.4;}
+.v4 .sb2{font-size:12.5px;color:var(--sub);margin-top:5px;line-height:1.55;}
+.v4 .amt{font-family:Consolas,monospace;font-size:16.5px;font-weight:700;}
+.v4 .tm{font-family:Consolas,monospace;font-size:10px;color:var(--time);margin-top:4px;}
+.v4 .btn{display:inline-block;margin-top:10px;background:var(--brand);color:#fff;
+  font-size:12.5px;font-weight:600;padding:7px 18px;border-radius:9px;}
+.v4 .btn.g{background:#EDF0F2;color:var(--sub);margin-left:8px;}
+.v4 .fab{background:var(--brand);color:#fff;box-shadow:0 6px 16px rgba(0,181,120,.34);}
+</style>
+</head>
+<body>
+<div class="board">
+
+<!-- ① 净亮 -->
+<div><div class="ph v1">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b><span class="pill">待确认 1</span></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="list">
+    <div class="card">
+      <div class="row"><div><div class="tt">烧饼</div><div class="amt">¥1.00</div></div>
+        <div class="tm">10:22</div></div>
+      <span class="tag">餐饮</span>
+      <div><span class="btn">确认</span><span class="btn g">改一下</span></div>
+    </div>
+    <div class="card">
+      <div class="row"><div><div class="tt">明天去老丈人家</div>
+        <div class="sb2">明天 10:00 提醒 · 今晚 20:00 再提一次</div></div>
+        <div class="tm">10:21</div></div>
+    </div>
+    <div class="card">
+      <div class="row"><div><div class="tt">Flutter 状态管理：三种方案怎么选</div>
+        <div class="sb2">小项目用 Provider 足够，中大型项目优先 Riverpod…</div></div>
+        <div class="tm">3h</div></div>
+    </div>
+    <div class="card">
+      <div class="row"><div><div class="tt">给车加油</div><div class="amt">¥320.00</div></div>
+        <div class="tm">昨天</div></div>
+      <span class="tag">交通</span>
+    </div>
+  </div>
+  <div class="fab">＋</div>
+</div><div class="cap">① 净亮 — 白卡片 + 湖蓝品牌色 + 大留白<br>参考：滴答清单 / Apple 提醒事项 / 小米笔记</div></div>
+
+<!-- ② 雾感 -->
+<div><div class="ph v2">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="row"><span class="bar g"></span><div class="m">
+      <div class="tt">烧饼</div>
+      <div class="amt">¥1.00<small>餐饮 · 待确认</small></div>
+      <span class="btn">确认</span></div>
+    <div class="tm">10:22</div></div>
+  <div class="row"><span class="bar"></span><div class="m">
+      <div class="tt">明天去老丈人家</div>
+      <div class="sb2">明天 10:00 提醒 · 今晚 20:00 再提一次</div></div>
+    <div class="tm">10:21</div></div>
+  <div class="row"><span class="bar g"></span><div class="m">
+      <div class="tt">Flutter 状态管理：三种方案怎么选</div>
+      <div class="sb2">小项目用 Provider 足够，中大型项目优先 Riverpod…</div></div>
+    <div class="tm">3h</div></div>
+  <div class="row"><span class="bar g"></span><div class="m">
+      <div class="tt">给车加油</div>
+      <div class="amt">¥320.00<small>交通</small></div></div>
+    <div class="tm">昨天</div></div>
+  <div class="row"><span class="bar"></span><div class="m">
+      <div class="tt">媳妇说：周六别安排别的</div>
+      <div class="sb2">语音记的</div></div>
+    <div class="tm">昨天</div></div>
+  <div class="fab">＋</div>
+</div><div class="cap">② 雾感 — 无卡片细线列表 + 莫兰迪灰绿 + 安静留白<br>参考：微信读书 / Cubox 阅读页</div></div>
+
+<!-- ③ 暗夜冷 -->
+<div><div class="ph v3">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hd"><b>收着</b><span class="pill">BYOK</span></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="list">
+    <div class="card">
+      <div class="row"><div><div class="tt">烧饼</div><div class="amt">¥1.00</div></div>
+        <div class="tm">10:22</div></div>
+      <div><span class="btn">确认</span><span class="btn g">改</span></div>
+    </div>
+    <div class="card">
+      <div class="row"><div><div class="tt">明天去老丈人家</div>
+        <div class="sb2">明天 10:00 提醒 · 今晚 20:00 再提一次</div></div>
+        <div class="tm">10:21</div></div>
+    </div>
+    <div class="card">
+      <div class="row"><div><div class="tt">Flutter 状态管理：三种方案怎么选</div>
+        <div class="sb2">小项目用 Provider 足够，中大型项目优先 Riverpod…</div></div>
+        <div class="tm">3h</div></div>
+    </div>
+    <div class="card">
+      <div class="row"><div><div class="tt">给车加油</div><div class="amt">¥320.00</div></div>
+        <div class="tm">昨天</div></div>
+    </div>
+  </div>
+  <div class="fab">＋</div>
+</div><div class="cap">③ 暗夜冷 — 深色卡片 + 荧光绿 + 等宽数字 + 开发者气质<br>参考：系统设置 / 终端类工具 / Vercel 控制台</div></div>
+
+<!-- ④ 色块头 -->
+<div><div class="ph v4">
+  <div class="sb"><span>10:24</span><span>5G 87%</span></div>
+  <div class="hero"><b>收着</b>
+    <div class="search">搜之前收过的…</div></div>
+  <div class="tabs"><i class="on">全部</i><i>文章</i><i>待办</i><i>账目</i><i>笔记</i></div>
+  <div class="row"><span class="ic" style="background:#F2994A;">账</span><div class="m">
+      <div class="tt">烧饼</div><div class="amt">¥1.00 · 餐饮</div>
+      <span class="btn">确认</span><span class="btn g">改一下</span></div></div>
+  <div class="row"><span class="ic" style="background:#3478F6;">事</span><div class="m">
+      <div class="tt">明天去老丈人家</div>
+      <div class="sb2">明天 10:00 提醒 · 今晚 20:00 再提一次</div></div>
+    <div class="tm">10:21</div></div>
+  <div class="row"><span class="ic" style="background:#7A8B7F;">文</span><div class="m">
+      <div class="tt">Flutter 状态管理：三种方案怎么选</div>
+      <div class="sb2">小项目用 Provider 足够，中大型项目优先 Riverpod…</div></div>
+    <div class="tm">3h</div></div>
+  <div class="row"><span class="ic" style="background:#F2994A;">账</span><div class="m">
+      <div class="tt">给车加油</div><div class="amt">¥320.00 · 交通</div></div></div>
+  <div class="fab">＋</div>
+</div><div class="cap">④ 色块头 — 大面积品牌绿头图 + 彩色类型图标 + 圆角白列表<br>参考：美团 / 支付宝 / 小红书（活跃、亲切、辨识度强）</div></div>
+
+</div>
+</body>
+</html>
