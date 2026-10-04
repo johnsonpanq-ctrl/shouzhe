@@ -150,6 +150,7 @@ class MainActivity : ComponentActivity() {
                         Screen.SETTINGS -> {
                             val svm: SettingsViewModel = hiltViewModel()
                             val sstate by svm.state.collectAsStateWithLifecycle()
+                            val shareReq: android.content.Intent? by svm.shareTo.collectAsStateWithLifecycle()
                             SettingsScreen(
                                 state = sstate,
                                 onBack = { screen = Screen.INBOX },
@@ -170,7 +171,23 @@ class MainActivity : ComponentActivity() {
                                 onVisionApiKeyChange = svm::onVisionApiKeyChange,
                                 onVisionModelChange = svm::onVisionModelChange,
                                 onApplyVisionPreset = svm::applyVisionPreset,
+                                onExportBackup = svm::exportFullBackup,
+                                onExportLedger = svm::exportLedgerCsv,
+                                onDismissMessage = svm::dismissMessage,
                             )
+
+                            // 导出完成后调起系统分享面板（Intent 由 ViewModel 构造好）
+                            val share = shareReq
+                            LaunchedEffect(share) {
+                                if (share != null) {
+                                    runCatching {
+                                        startActivity(
+                                            Intent.createChooser(share, "导出到")
+                                        )
+                                    }.onFailure { svm.onShareFailed() }
+                                    svm.consumeShareRequest()
+                                }
+                            }
                         }
 
                         Screen.KEEP_ALIVE -> KeepAliveScreen(

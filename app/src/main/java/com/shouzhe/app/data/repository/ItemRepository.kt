@@ -331,6 +331,14 @@ class ItemRepository @Inject constructor(
 
     // ------------------------------------------------------------------
 
+    /**
+     * 取全部条目用于导出（v0.11.0）。
+     * 含已归档与已软删除的 —— 备份要完整，不能因为用户误删就漏掉。
+     */
+    suspend fun findAllForExport(): List<Item> = withContext(Dispatchers.IO) {
+        itemDao.findAllForExport().map { it.toDomain(includeExtras = true) }
+    }
+
     private suspend fun ItemEntity.toDomain(includeExtras: Boolean = false): Item {
         val type = runCatching { ItemType.valueOf(this.type) }.getOrDefault(ItemType.NOTE)
         val status = runCatching { ItemStatus.valueOf(this.status) }.getOrDefault(ItemStatus.INBOX)

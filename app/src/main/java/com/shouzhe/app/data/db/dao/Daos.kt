@@ -62,6 +62,15 @@ interface ItemDao {
 
     @Query("SELECT COUNT(*) FROM item WHERE status = 'INBOX'")
     fun observeInboxCount(): Flow<Int>
+
+    /**
+     * 全量导出用（v0.11.0）：**包括已归档和已软删除的**。
+     *
+     * 导出是备份，不是"当前视图" —— 用户误删的东西也应该在备份里，
+     * 否则这份备份就不完整，失去了兜底的意义。
+     */
+    @Query("SELECT * FROM item ORDER BY createdAt ASC")
+    suspend fun findAllForExport(): List<ItemEntity>
 }
 
 @Dao

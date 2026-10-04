@@ -54,6 +54,10 @@ fun SettingsScreen(
     onVisionApiKeyChange: (String) -> Unit,
     onVisionModelChange: (String) -> Unit,
     onApplyVisionPreset: (ModelConfig.Preset) -> Unit,
+    // 数据备份（v0.11.0）
+    onExportBackup: () -> Unit,
+    onExportLedger: () -> Unit,
+    onDismissMessage: () -> Unit = {},
 ) {
     val e = szExtras()
 
@@ -352,6 +356,97 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(18.dp))
 
+        // ---------------- 数据备份（v0.11.0） ----------------
+        SectionTitle("数据备份")
+
+        SzCard {
+            Text(
+                "你的数据只在这台手机里，没有云端。",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = e.ink,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "换手机、刷机、误卸载之前，先导出一份。" +
+                    "导出会调起系统分享面板，你可以存到文件管理器、发给自己或传网盘。",
+                fontSize = 11.5.sp,
+                color = e.ink3,
+                lineHeight = 18.sp,
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(SzRadius.button.dp))
+                        .background(if (state.exporting) e.surfaceDeep else e.brand)
+                        .clickable(enabled = !state.exporting) { onExportBackup() }
+                        .padding(horizontal = 16.dp, vertical = 9.dp),
+                ) {
+                    Text(
+                        if (state.exporting) "导出中…" else "导出全量备份",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (state.exporting) e.ink3 else e.onBrand,
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(SzRadius.button.dp))
+                        .background(e.surfaceAlt)
+                        .clickable(enabled = !state.exporting) { onExportLedger() }
+                        .padding(horizontal = 16.dp, vertical = 9.dp),
+                ) {
+                    Text("导出账本 CSV", fontSize = 12.5.sp, color = e.ink2)
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "全量备份 = JSON，含所有内容和金额（用于将来导回，" +
+                    "目前还未提供导入）；账本 CSV 只含账目，可以直接用 Excel 打开。",
+                fontSize = 11.sp,
+                color = e.ink3,
+                lineHeight = 17.sp,
+            )
+
+            // 导出结果提示（成功/失败都内联显示，不弹窗打断）
+            state.message?.let { msg ->
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(SzRadius.input.dp))
+                        .background(e.brandSoft)
+                        .padding(11.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            msg,
+                            fontSize = 12.sp,
+                            color = e.brand,
+                            modifier = Modifier.weight(1f),
+                            lineHeight = 18.sp,
+                        )
+                        Text(
+                            "知道了",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = e.brand,
+                            modifier = Modifier
+                                .clickable { onDismissMessage() }
+                                .padding(start = 10.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
+
         // ---------------- 用量 ----------------
         SectionTitle("用量")
 
@@ -394,7 +489,12 @@ fun SettingsScreen(
         SectionTitle("关于")
 
         SzCard {
-            Text("收这吧 v0.1.0", fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = e.ink)
+            Text(
+                // 读 BuildConfig 而不是硬编码 —— 之前写死 "v0.1.0"，
+                // 版本涨到 0.11 还挂着旧号，属于文档谎言
+                "收这吧 v" + com.shouzhe.app.BuildConfig.VERSION_NAME,
+                fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, color = e.ink,
+            )
             Spacer(Modifier.height(6.dp))
             Text(
                 "什么都往里丢，它替你存好、提纯、找回。\n数据只在你的手机里，模型用你自己的 Key。",

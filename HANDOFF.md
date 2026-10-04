@@ -21,9 +21,9 @@ App 分类、存好、到点提醒。**无服务器、无账号、模型走用�
 
 | 项 | 值 |
 |---|---|
-| 最新版本 | **v0.10.0**（versionCode 12） |
-| APK | `收这吧-v0.10.0-debug.apk`（102.4MB，含 24MB 离线语音模型） |
-| 测试 | **81 个单测全绿**（17 时间 + 12 规则 + 10 识图 + 5 识图配置 + 15 金额 + 12 账本区间 + 10 标签清洗） |
+| 最新版本 | **v0.11.0**（versionCode 13） |
+| APK | `收这吧-v0.11.0-debug.apk`（102.2MB，含 24MB 离线语音模型） |
+| 测试 | **103 个单测全绿**（17 时间 + 12 规则 + 10 识图 + 5 识图配置 + 15 金额 + 12 账本区间 + 10 标签清洗 + 22 导出） |
 | 构建 | 已验证 `assembleDebug` 通过 |
 | 构建环境 | JDK 17（`C:\tools\jdk-17.0.2`）、Android SDK（`D:\android-sdk`，platform 35 / build-tools 35.0.0）、Gradle 8.9（`D:\gradle\gradle-8.9`）、`local.properties` 已配 |
 | 验证方式 | 模拟器 AVD `shouzhe_test`（android-34）；**v1→v2 迁移、v0.8.0 账目编辑、v0.9.0 账本汇总均已实测** |
@@ -114,9 +114,26 @@ ModelGateway.recognizeReceipt（OpenAI 兼容 vision）、设置页「识图模�
 | **3** | ~~账目编辑~~ ✅ **v0.8.0 已完成** | |
 | **4** | ~~账本汇总~~ ✅ **v0.9.0 已完成** | |
 | **5** | ~~标签与摘要接线~~ ✅ **v0.10.0 已完成** | 管线接通 + 修掉 3 个真缺陷（详见 CHANGELOG） |
-| **6** | **语义搜索** | `item_embedding` 表已预留；embedding 走用户模型 API 或本地小模型 |
-| 7 | 账本导出（CSV/JSON） | 目前数据只在 App 内，用户没法自己备份。DATABASE.md 提到过导出但没做 |
-| 8 | 归档与批量操作 | `status=ARCHIVED` 字段有了但界面上没有入口 |
+| **6** | ~~数据导出~~ ✅ **v0.11.0 已完成** | 全量 JSON 备份 + 账本 CSV，走系统分享面板，零存储权限 |
+| **7** | **备份导入** | 导出已就绪但**还没有导回入口** —— 备份不能恢复等于半个保险。做的时候注意：uuid 去重、类型字段校验 |
+| **8** | **语义搜索** | `item_embedding` 表已预留；embedding 走用户模型 API 或本地小模型 |
+| 9 | 归档与批量操作 | `status=ARCHIVED` 字段有了但界面上没有入口 |
+
+---
+
+## 五之四、v0.11.0 实测（2026-10-04）
+
+- **CSV 导出**：内容核对无误 —— BOM 存在（`EF BB BF`）、金额是元（38.55）、
+  状态区分"已确认/待确认"、**含换行的标题被正确引号包裹**（不撑破列）✅
+- **JSON 备份**：**Python 严格解析通过** —— `amountCents = 3855`（分，无损）、
+  `confirmed` 保留、含换行标题正确转义、`formatVersion = 1` ✅
+- **分享面板**：正常弹出（Nearby Share / Drive / Gmail 可选）✅
+
+**⚠️ 验证导出文件时我踩的坑（记下来免得下次重踩）**：
+用 PowerShell 的 `[System.Text.Encoding]::UTF8` **静态属性**写文件会带 BOM，
+导致 Python `json.load` 报 "Unexpected UTF-8 BOM" —— **那是我验证脚本引入的，
+不是产品缺陷**（`od` 实测文件头是 `7B 0A 20 20`，干净的 `{` 开头）。
+正确做法：用 `[System.IO.File]::WriteAllBytes(path, bytes)` 直接写原始字节。
 
 ---
 

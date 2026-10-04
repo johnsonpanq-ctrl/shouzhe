@@ -6,7 +6,13 @@ import com.shouzhe.app.core.result.Outcome
 import com.shouzhe.app.data.prefs.ModelConfig
 import com.shouzhe.app.data.prefs.SettingsStore
 import com.shouzhe.app.data.db.ShouzheDatabase
+import com.shouzhe.app.data.repository.ItemRepository
+import com.shouzhe.app.domain.model.ItemType
+import com.shouzhe.app.domain.parse.CsvExport
+import com.shouzhe.app.domain.parse.JsonExport
 import com.shouzhe.app.model.gateway.ModelGateway
+import com.shouzhe.app.platform.export.ExportResult
+import com.shouzhe.app.platform.export.Exporter
 import com.shouzhe.app.platform.notify.AlarmScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -41,6 +47,10 @@ data class SettingsUiState(
     val visionBaseUrl: String = "",
     val visionApiKey: String = "",
     val visionModelName: String = "",
+    // 导出（v0.11.0）
+    val exporting: Boolean = false,
+    val itemCount: Int = 0,
+    val message: String? = null,
 ) {
     val isConfigured: Boolean
         get() = apiKey.isNotBlank() && baseUrl.isNotBlank() && modelName.isNotBlank()
@@ -70,12 +80,38 @@ class SettingsViewModel @Inject constructor(
     private val gateway: ModelGateway,
     private val scheduler: AlarmScheduler,
     private val db: ShouzheDatabase,
+    private val repo: ItemRepository,
+    private val exporter: Exporter,
 ) : ViewModel() {
 
     private val draft = MutableStateFlow(Draft())
     private val ping = MutableStateFlow<PingState>(PingState.Idle)
     private val saved = MutableStateFlow(false)
     private val usage = MutableStateFlow(0L to 0)
+    private val exporting = MutableStateFlow(false)
+    private val itemCount = MutableStateFlow(0)
+    private val message = MutableStateFlow<String?>(null)
+
+    fun dismissMessage() { message.value = null }
+
+    /**
+     * 待分享的导出文件（v0.11.0）。
+     *
+     * Intent 在这里构造好，界面层只管 startActivity ——
+     * 这样"怎么分享"的知识留在 ViewModel，UI 不需要知道 FileProvider 之类的细节。
+     * 界面层消费后调 [consumeShareRequest] 清掉，避免重组时反复弹面板。
+     */
+    private val shareRequest = MutableStateFlow<android.content.Intent?>(null)
+
+    /** 界面层订阅它来弹分享面板 */
+    val shareTo: StateFlow<android.content.Intent?> = shareRequest.asStateFlow()
+
+    fun consumeShareRequest() { shareRequest.value = null }
+
+    fun onShareFailed() {
+        shareRequest.value = null
+        message.value = "没有可用的分享目标，文件已生成在应用缓存里"
+    }
 
     private data class Draft(
         val baseUrl: String = ModelConfig.DEFAULT_BASE_URL,
@@ -95,18 +131,19 @@ class SettingsViewModel @Inject constructor(
     )
 
     val state: StateFlow<SettingsUiState> = combine(
-        draft, ping, saved, usage,
-    ) { d, p, s, u ->
+        draft, ping, saved, usage, exporting, itemCount, message,
+    ) { a ->
+        val d = a[0] as Draft
         SettingsUiState(
             baseUrl = d.baseUrl,
             apiKey = d.apiKey,
             modelName = d.modelName,
             summarySentences = d.summarySentences,
-            ping = p,
-            saved = s,
+            ping = a[1] as PingState,
+            saved = a[2] as Boolean,
             exactAlarmOk = scheduler.canScheduleExact(),
-            tokenCount = u.first,
-            failureCount = u.second,
+            tokenCount = (a[3] as Pair<*, *>).first as Long,
+            failureCount = (a[3] as Pair<*, *>).second as Int,
             asrMode = d.asrMode,
             asrBaseUrl = d.asrBaseUrl,
             asrApiKey = d.asrApiKey,
@@ -114,8 +151,72 @@ class SettingsViewModel @Inject constructor(
             visionBaseUrl = d.visionBaseUrl,
             visionApiKey = d.visionApiKey,
             visionModelName = d.visionModelName,
+            exporting = a[4] as Boolean,
+            itemCount = a[5] as Int,
+            message = a[6] as String?,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+
+    /**
+     * 导出账本 CSV（给人看 / 给别的记账软件读）。
+     */
+    fun exportLedgerCsv() {
+        viewModelScope.launch {
+            exporting.value = true
+            val items = runCatching { repo.findAllForExport() }.getOrDefault(emptyList())
+            val csv = CsvExport.ledgerToCsv(items)
+            val ledgerCount = items.count { it.type == ItemType.LEDGER }
+            if (ledgerCount == 0) {
+                message.value = "还没有账目可以导出"
+                exporting.value = false
+                return@launch
+            }
+            when (val r = exporter.write(fileName("账本", "csv"), csv)) {
+                is ExportResult.Ok -> {
+                    message.value = "已导出 $ledgerCount 笔账目"
+                    shareRequest.value = exporter.shareIntent(
+                        r.uri, "text/csv", "收这吧 · 账本导出",
+                    )
+                }
+                is ExportResult.Failed -> message.value = "导出失败：${r.reason}"
+            }
+            exporting.value = false
+        }
+    }
+
+    /**
+     * 导出全量 JSON 备份（给程序读 / 将来能导回来）。
+     */
+    fun exportFullBackup() {
+        viewModelScope.launch {
+            exporting.value = true
+            val items = runCatching { repo.findAllForExport() }.getOrDefault(emptyList())
+            val json = JsonExport.backupToJson(
+                items = items,
+                appVersion = appVersion(),
+            )
+            when (val r = exporter.write(fileName("全量备份", "json"), json)) {
+                is ExportResult.Ok -> {
+                    message.value = "已备份 ${items.size} 条内容"
+                    shareRequest.value = exporter.shareIntent(
+                        r.uri, "application/json", "收这吧 · 全量备份",
+                    )
+                }
+                is ExportResult.Failed -> message.value = "导出失败：${r.reason}"
+            }
+            exporting.value = false
+        }
+    }
+
+    /** 导出文件名带时间戳，方便用户区分不同时间的备份 */
+    private fun fileName(prefix: String, ext: String): String {
+        val ts = java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
+        return "shouzhe-$prefix-$ts.$ext"
+    }
+
+    private fun appVersion(): String =
+        runCatching { com.shouzhe.app.BuildConfig.VERSION_NAME }.getOrDefault("")
 
     init {
         // 载入已保存的配置
@@ -133,6 +234,10 @@ class SettingsViewModel @Inject constructor(
                 visionBaseUrl = vision.baseUrl, visionApiKey = vision.apiKey,
                 visionModelName = vision.modelName,
             )
+        }
+        // 内容条数（导出界面显示"将导出 N 条"）
+        viewModelScope.launch {
+            runCatching { itemCount.value = repo.findAllForExport().size }
         }
         // 载入用量统计（近 7 天）
         viewModelScope.launch {
