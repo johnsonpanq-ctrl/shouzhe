@@ -4,9 +4,11 @@ import com.shouzhe.app.core.result.*
 import com.shouzhe.app.data.db.ShouzheDatabase
 import com.shouzhe.app.data.db.entity.*
 import com.shouzhe.app.domain.model.*
+import com.shouzhe.app.domain.parse.BackupParser
 import com.shouzhe.app.domain.parse.LedgerRange
 import com.shouzhe.app.platform.extract.ExtractOutcome
 import com.shouzhe.app.platform.extract.WebViewExtractor
+import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -337,6 +339,131 @@ class ItemRepository @Inject constructor(
      */
     suspend fun findAllForExport(): List<Item> = withContext(Dispatchers.IO) {
         itemDao.findAllForExport().map { it.toDomain(includeExtras = true) }
+    }
+
+    // ------------------------------------------------------------------
+    // 备份导入（v0.12.0）
+    // ------------------------------------------------------------------
+
+    /** 导入结果统计 */
+    data class ImportStats(
+        val inserted: Int,
+        val skippedExisting: Int,
+        val skippedInvalid: Int,
+    ) {
+        val total: Int get() = inserted + skippedExisting + skippedInvalid
+    }
+
+    /**
+     * **合并式**导入（不是覆盖）。
+     *
+     * 为什么必须合并而不是清空重来：
+     * 用户手机上有 100 条、导入一份 3 条的老备份，覆盖式的结果是**只剩 3 条** ——
+     * "恢复数据"把数据恢复没了。这个项目不能接受这种事故。
+     *
+     * 规则：
+     * - `uuid` 已存在 → 跳过（重复导入同一份文件不产生重复数据）
+     * - `uuid` 不存在 → 插入
+     * - 整批操作放在**一个事务**里：中途任何异常都会回滚，不会留下半截数据
+     */
+    suspend fun importBackup(items: List<BackupParser.BackupItem>): ImportStats =
+        withContext(Dispatchers.IO) {
+            var inserted = 0
+            var skippedExisting = 0
+            var skippedInvalid = 0
+
+            db.withTransaction {
+                items.forEach { b ->
+                    if (itemDao.findByUuid(b.uuid) != null) {
+                        skippedExisting++
+                        return@forEach
+                    }
+                    val newId = runCatching { insertBackupItem(b) }.getOrNull()
+                    if (newId == null || newId <= 0) skippedInvalid++ else inserted++
+                }
+
+                // 标签使用次数重算一次就够，不用每条都刷
+                db.openHelper.writableDatabase.execSQL(
+                    "UPDATE tag SET useCount = (SELECT COUNT(*) FROM item_tag WHERE tagId = tag.id)"
+                )
+            }
+
+            ImportStats(inserted, skippedExisting, skippedInvalid)
+        }
+
+    /** 插入一条备份条目（含分型子表）；返回新 id，失败返回 null */
+    private suspend fun insertBackupItem(b: BackupParser.BackupItem): Long? {
+        val now = Instant.now().toEpochMilli()
+        val createdAt = b.createdAt?.toEpochMilli() ?: now
+        val updatedAt = b.updatedAt?.toEpochMilli() ?: createdAt
+
+        // 账目类型但没读出 ledger → 降级成笔记，总比造一笔 0 元的假账好
+        val effectiveType = if (b.type == ItemType.LEDGER && b.ledger == null) {
+            ItemType.NOTE
+        } else {
+            b.type
+        }
+
+        val id = itemDao.insert(
+            ItemEntity(
+                uuid = b.uuid,
+                type = effectiveType.name,
+                title = b.title.take(200),
+                rawText = b.rawText,
+                summary = b.summary,
+                sourceUrl = b.sourceUrl,
+                sourceApp = b.sourceApp,
+                status = b.status.name,
+                quality = b.quality,
+                createdAt = createdAt,
+                updatedAt = updatedAt,
+                // 原图路径不进备份（图片文件不在备份里），留空避免指向不存在的文件
+                sourceImagePath = null,
+            )
+        )
+        if (id <= 0) return null
+
+        if (effectiveType == ItemType.LEDGER) {
+            val l = b.ledger!!
+            ledgerDao.upsert(
+                LedgerEntryEntity(
+                    itemId = id,
+                    amountCents = l.amountCents,
+                    direction = l.direction.name,
+                    category = l.category,
+                    merchant = l.merchant,
+                    occurredAt = l.occurredAt?.toEpochMilli() ?: createdAt,
+                    confirmed = l.confirmed,
+                )
+            )
+        }
+
+        if (effectiveType == ItemType.TODO && b.todo != null) {
+            todoDao.upsert(
+                TodoMetaEntity(
+                    itemId = id,
+                    dueAt = b.todo.dueAt?.toEpochMilli(),
+                    remindAt = b.todo.remindAt?.toEpochMilli(),
+                    remindState = b.todo.remindState,
+                    priority = b.todo.priority,
+                    repeatRule = null,
+                    completedAt = null,
+                    snoozeCount = 0,
+                )
+            )
+        }
+
+        if (b.tags.isNotEmpty()) {
+            val nowMs = Instant.now().toEpochMilli()
+            cleanTags(b.tags).forEach { name ->
+                db.tagDao().insert(TagEntity(name = name, createdAt = nowMs))
+                val tag = db.tagDao().findByName(name) ?: return@forEach
+                // 标成 user 来源：导入的标签不该被后续 AI 打标签操作清掉
+                db.tagDao().link(ItemTagEntity(itemId = id, tagId = tag.id, source = "user"))
+            }
+        }
+
+        return id
     }
 
     private suspend fun ItemEntity.toDomain(includeExtras: Boolean = false): Item {

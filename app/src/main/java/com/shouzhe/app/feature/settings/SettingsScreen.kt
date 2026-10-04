@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shouzhe.app.data.prefs.ModelConfig
@@ -54,10 +55,16 @@ fun SettingsScreen(
     onVisionApiKeyChange: (String) -> Unit,
     onVisionModelChange: (String) -> Unit,
     onApplyVisionPreset: (ModelConfig.Preset) -> Unit,
-    // 数据备份（v0.11.0）
+    // 数据备份（v0.11.0 / v0.12.0）
     onExportBackup: () -> Unit,
     onExportLedger: () -> Unit,
+    onPickImportFile: () -> Unit,
     onDismissMessage: () -> Unit = {},
+    /** 导入预览（非 null 时弹确认框） */
+    importPreview: SettingsViewModel.PendingImport? = null,
+    onConfirmImport: () -> Unit = {},
+    onCancelImport: () -> Unit = {},
+    importing: Boolean = false,
 ) {
     val e = szExtras()
 
@@ -405,9 +412,22 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(10.dp))
+
+            // 导入（v0.12.0）—— 与导出并列，但语义是"合并"不是"覆盖"
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(SzRadius.button.dp))
+                    .background(e.surfaceAlt)
+                    .clickable(enabled = !state.exporting) { onPickImportFile() }
+                    .padding(horizontal = 16.dp, vertical = 9.dp),
+            ) {
+                Text("导入备份", fontSize = 12.5.sp, color = e.ink2)
+            }
+
+            Spacer(Modifier.height(10.dp))
             Text(
-                "全量备份 = JSON，含所有内容和金额（用于将来导回，" +
-                    "目前还未提供导入）；账本 CSV 只含账目，可以直接用 Excel 打开。",
+                "全量备份 = JSON，含所有内容和金额；账本 CSV 只含账目，可以直接用 Excel 打开。\n" +
+                    "导入是合并式：重复的条目会自动跳过，不会覆盖或清空你现在的数据。",
                 fontSize = 11.sp,
                 color = e.ink3,
                 lineHeight = 17.sp,
@@ -502,6 +522,123 @@ fun SettingsScreen(
                 color = e.ink2,
                 lineHeight = 20.sp,
             )
+        }
+    }
+
+    // 导入确认框（v0.12.0）——
+    // 必须让用户看清"要新增多少条"，再决定是否写库
+    importPreview?.let { p ->
+        ImportConfirmDialog(
+            preview = p,
+            importing = importing,
+            onConfirm = onConfirmImport,
+            onCancel = onCancelImport,
+        )
+    }
+}
+
+/**
+ * 导入确认对话框。
+ *
+ * 为什么一定要这一步：导入是往用户唯一的数据库里写数据。
+ * 如果"选完文件立刻导"，用户选错文件时连反悔的机会都没有。
+ * 这里把"新增 N 条 / 跳过 M 条"摆明，用户点头才动手。
+ */
+@Composable
+private fun ImportConfirmDialog(
+    preview: SettingsViewModel.PendingImport,
+    importing: Boolean,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val e = szExtras()
+    androidx.compose.ui.window.Dialog(onDismissRequest = { if (!importing) onCancel() }) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(SzRadius.card.dp))
+                .background(androidx.compose.material3.MaterialTheme.colorScheme.surface)
+                .padding(20.dp),
+        ) {
+            Text("导入备份", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = e.ink)
+            Spacer(Modifier.height(12.dp))
+
+            Text(
+                preview.fileName,
+                fontSize = 11.5.sp,
+                color = e.ink3,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            preview.exportedAt?.let {
+                Spacer(Modifier.height(3.dp))
+                Text("导出时间：${it.take(19).replace("T", " ")}", fontSize = 11.sp, color = e.ink3)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // 把数字摆明白，用户才知道自己在确认什么
+            Row {
+                Column(Modifier.weight(1f)) {
+                    Text("新增", fontSize = 12.sp, color = e.ink3)
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        "${preview.willInsert}",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = e.brand,
+                    )
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("已存在跳过", fontSize = 12.sp, color = e.ink3)
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        "${preview.willSkip}",
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = e.ink2,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "导入是合并式的：不会清空或覆盖你已有的数据。" +
+                    "导入前 App 会自动把当前数据另存一份作为保险。",
+                fontSize = 11.5.sp,
+                color = e.ink3,
+                lineHeight = 18.sp,
+            )
+
+            Spacer(Modifier.height(18.dp))
+            Row {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(SzRadius.button.dp))
+                        .background(if (importing) e.surfaceDeep else e.brand)
+                        .clickable(enabled = !importing) { onConfirm() }
+                        .padding(horizontal = 18.dp, vertical = 9.dp),
+                ) {
+                    Text(
+                        if (importing) "导入中…" else "确认导入",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (importing) e.ink3 else e.onBrand,
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(SzRadius.button.dp))
+                        .background(e.surfaceAlt)
+                        .clickable(enabled = !importing) { onCancel() }
+                        .padding(horizontal = 18.dp, vertical = 9.dp),
+                ) {
+                    Text("取消", fontSize = 13.sp, color = e.ink2)
+                }
+            }
         }
     }
 }

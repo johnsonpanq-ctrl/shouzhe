@@ -151,6 +151,28 @@ class MainActivity : ComponentActivity() {
                             val svm: SettingsViewModel = hiltViewModel()
                             val sstate by svm.state.collectAsStateWithLifecycle()
                             val shareReq: android.content.Intent? by svm.shareTo.collectAsStateWithLifecycle()
+                            val importPreview by svm.importPreview.collectAsStateWithLifecycle()
+                            val importing by svm.isImporting.collectAsStateWithLifecycle()
+
+                            // SAF 选文件（不需要存储权限）
+                            val pickerCtx = androidx.compose.ui.platform.LocalContext.current
+                            val pickBackup = androidx.activity.compose.rememberLauncherForActivityResult(
+                                androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+                            ) { uri: android.net.Uri? ->
+                                if (uri != null) {
+                                    val name = runCatching {
+                                        pickerCtx.contentResolver
+                                            .query(uri, null, null, null, null)
+                                            ?.use { c ->
+                                                val i = c.getColumnIndex(
+                                                    android.provider.OpenableColumns.DISPLAY_NAME
+                                                )
+                                                if (c.moveToFirst() && i >= 0) c.getString(i) else null
+                                            }
+                                    }.getOrNull() ?: "备份文件"
+                                    svm.prepareImport(uri, name)
+                                }
+                            }
                             SettingsScreen(
                                 state = sstate,
                                 onBack = { screen = Screen.INBOX },
@@ -173,7 +195,14 @@ class MainActivity : ComponentActivity() {
                                 onApplyVisionPreset = svm::applyVisionPreset,
                                 onExportBackup = svm::exportFullBackup,
                                 onExportLedger = svm::exportLedgerCsv,
+                                onPickImportFile = {
+                                    pickBackup.launch(arrayOf("application/json", "text/plain", "*/*"))
+                                },
                                 onDismissMessage = svm::dismissMessage,
+                                importPreview = importPreview,
+                                onConfirmImport = svm::confirmImport,
+                                onCancelImport = svm::cancelImport,
+                                importing = importing,
                             )
 
                             // 导出完成后调起系统分享面板（Intent 由 ViewModel 构造好）

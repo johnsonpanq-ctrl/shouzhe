@@ -59,7 +59,50 @@ class Exporter @Inject constructor(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
+    // ------------------------------------------------------------------
+    // 导入（v0.12.0）
+    // ------------------------------------------------------------------
+
+    /** 读取用户选中的备份文件（走 SAF，不需要存储权限） */
+    suspend fun read(uri: Uri, maxBytes: Long = MAX_IMPORT_BYTES): ReadResult =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
+                    // 限制大小：备份是文本，正常几 MB 顶天；
+                    // 万一用户选了个几 GB 的文件，不能直接把内存撑爆
+                    val buf = ByteArray(64 * 1024)
+                    val out = java.io.ByteArrayOutputStream()
+                    var total = 0L
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n <= 0) break
+                        total += n
+                        if (total > maxBytes) {
+                            return@runCatching ReadResult.TooLarge(maxBytes)
+                        }
+                        out.write(buf, 0, n)
+                    }
+                    out.toByteArray()
+                } ?: return@runCatching ReadResult.Failed("打不开这个文件")
+
+                // 备份一定是 UTF-8 文本；BOM 要剥掉（有些编辑器会加）
+                val text = String(bytes, Charsets.UTF_8).removePrefix("\uFEFF")
+                ReadResult.Ok(text)
+            }.getOrElse { e ->
+                ReadResult.Failed(e.message ?: "读取失败")
+            }
+        }
+
+    sealed interface ReadResult {
+        data class Ok(val text: String) : ReadResult
+        data class TooLarge(val limit: Long) : ReadResult
+        data class Failed(val reason: String) : ReadResult
+    }
+
     private companion object {
         const val DIR_NAME = "export"
+
+        /** 导入文件上限 32MB —— 纯文本备份不可能这么大，超了必有问题 */
+        const val MAX_IMPORT_BYTES = 32L * 1024 * 1024
     }
 }

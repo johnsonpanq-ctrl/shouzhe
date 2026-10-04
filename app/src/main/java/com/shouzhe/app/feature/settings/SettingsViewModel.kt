@@ -8,6 +8,7 @@ import com.shouzhe.app.data.prefs.SettingsStore
 import com.shouzhe.app.data.db.ShouzheDatabase
 import com.shouzhe.app.data.repository.ItemRepository
 import com.shouzhe.app.domain.model.ItemType
+import com.shouzhe.app.domain.parse.BackupParser
 import com.shouzhe.app.domain.parse.CsvExport
 import com.shouzhe.app.domain.parse.JsonExport
 import com.shouzhe.app.model.gateway.ModelGateway
@@ -214,6 +215,103 @@ class SettingsViewModel @Inject constructor(
             .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
         return "shouzhe-$prefix-$ts.$ext"
     }
+
+    /**
+     * 待用户确认的导入（v0.12.0）。
+     *
+     * **必须先预览再写库**：导入是往用户唯一的数据库里写数据，
+     * 不能"选完文件立刻开始导" —— 万一选错文件（比如选了一份旧备份），
+     * 用户连反悔的机会都没有。
+     */
+    data class PendingImport(
+        val fileName: String,
+        val total: Int,
+        val willInsert: Int,
+        val willSkip: Int,
+        val items: List<com.shouzhe.app.domain.parse.BackupParser.BackupItem>,
+        val appVersion: String?,
+        val exportedAt: String?,
+    )
+
+    private val pendingImport = MutableStateFlow<PendingImport?>(null)
+    private val importing = MutableStateFlow(false)
+
+    val importPreview: StateFlow<PendingImport?> = pendingImport.asStateFlow()
+
+    fun cancelImport() { pendingImport.value = null }
+
+    /**
+     * 第一步：读文件并解析，生成预览（**不写库**）。
+     */
+    fun prepareImport(uri: android.net.Uri, fileName: String) {
+        viewModelScope.launch {
+            message.value = null
+            when (val r = exporter.read(uri)) {
+                is com.shouzhe.app.platform.export.Exporter.ReadResult.Failed ->
+                    message.value = "读取失败：${r.reason}"
+                is com.shouzhe.app.platform.export.Exporter.ReadResult.TooLarge ->
+                    message.value = "文件太大了（超过 ${r.limit / 1024 / 1024}MB），不像是备份文件"
+                is com.shouzhe.app.platform.export.Exporter.ReadResult.Ok -> {
+                    when (val p = BackupParser.parse(r.text)) {
+                        is BackupParser.Result.Bad -> message.value = p.reason
+                        is BackupParser.Result.Ok -> {
+                            // 算一下有多少条是新的（uuid 已存在的会跳过）
+                            val existing = runCatching {
+                                repo.findAllForExport().map { it.uuid }.toSet()
+                            }.getOrDefault(emptySet())
+                            val willSkip = p.backup.items.count { it.uuid in existing }
+                            pendingImport.value = PendingImport(
+                                fileName = fileName,
+                                total = p.backup.items.size,
+                                willInsert = p.backup.items.size - willSkip,
+                                willSkip = willSkip,
+                                items = p.backup.items,
+                                appVersion = p.backup.appVersion,
+                                exportedAt = p.backup.exportedAt,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 第二步：用户确认后真正写库。
+     *
+     * 写之前**先把当前数据导一份到缓存**当作保险 ——
+     * 万一导入把库搞乱了，用户还能从缓存里那份找回原样。
+     */
+    fun confirmImport() {
+        val pending = pendingImport.value ?: return
+        viewModelScope.launch {
+            importing.value = true
+            try {
+                // 保险：先把现状导一份出来
+                val before = runCatching { repo.findAllForExport() }.getOrDefault(emptyList())
+                val snapshot = JsonExport.backupToJson(before, appVersion = appVersion())
+                exporter.write("before-import-${System.currentTimeMillis()}.json", snapshot)
+
+                val stats = repo.importBackup(pending.items)
+                itemCount.value = runCatching { repo.findAllForExport().size }.getOrDefault(0)
+
+                message.value = buildString {
+                    append("导入完成：新增 ${stats.inserted} 条")
+                    if (stats.skippedExisting > 0) append("，跳过已存在 ${stats.skippedExisting} 条")
+                    if (stats.skippedInvalid > 0) append("，${stats.skippedInvalid} 条无法识别已忽略")
+                }
+            } catch (e: Exception) {
+                // 事务已回滚，库里还是导入前的样子
+                message.value = "导入失败（数据未被改动）：${e.message ?: "未知错误"}"
+            } finally {
+                importing.value = false
+                pendingImport.value = null
+            }
+        }
+    }
+
+    /** 让界面知道有导入任务在跑 */
+    val isImporting: StateFlow<Boolean> = importing.asStateFlow()
 
     private fun appVersion(): String =
         runCatching { com.shouzhe.app.BuildConfig.VERSION_NAME }.getOrDefault("")
