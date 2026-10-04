@@ -409,6 +409,47 @@ class DetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 手动补摘要与标签（v0.10.0）。
+     *
+     * 与自动 enrich 的区别：这是用户主动点的，所以**失败要说清楚**，
+     * 不能像后台那样静默吞掉 —— 用户点了没反应才是真的糟。
+     */
+    fun enrichNow() {
+        val it = item.value ?: return
+        val content = it.rawText?.takeIf { c -> c.isNotBlank() } ?: it.title
+        if (content.isBlank()) {
+            message.value = "没有内容可以处理"
+            return
+        }
+        viewModelScope.launch {
+            summarizing.value = true
+            var ok = false
+
+            // 摘要
+            when (val s = gateway.summarize(content)) {
+                is Outcome.Ok -> if (s.value.isNotBlank()) { repo.setSummary(it.id, s.value); ok = true }
+                is Outcome.Err -> Unit
+            }
+            // 标签
+            val existing = runCatching { db.tagDao().all().map { t -> t.name } }
+                .getOrDefault(emptyList())
+            var tagErr: String? = null
+            when (val t = gateway.tag(content, existing)) {
+                is Outcome.Ok -> if (t.value.isNotEmpty()) { repo.setTags(it.id, t.value); ok = true }
+                is Outcome.Err -> tagErr = t.error.userHint()
+            }
+
+            summarizing.value = false
+            reload()
+            message.value = when {
+                ok -> "摘要和标签已更新"
+                tagErr != null -> tagErr
+                else -> "模型没返回内容，可以换个模型试试"
+            }
+        }
+    }
+
     /** 手动生成摘要 */
     fun summarize() {
         val it = item.value ?: return

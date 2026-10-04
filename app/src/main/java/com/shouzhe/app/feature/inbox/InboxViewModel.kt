@@ -173,6 +173,13 @@ class InboxViewModel @Inject constructor(
                 if (ruleResult.entries.size > 1) {
                     message.value = "识别出 ${ruleResult.entries.size} 笔，待确认"
                 }
+                // 笔记类内容补摘要与标签（v0.10.0）。
+                // 账目/待办不补：它们有结构化字段，标签是噪音。
+                if (ruleResult.entries.size == 1 &&
+                    ruleResult.entries.first().type == ItemType.NOTE
+                ) {
+                    enrich(id, text)
+                }
                 onDone()
                 return@launch
             }
@@ -200,7 +207,10 @@ class InboxViewModel @Inject constructor(
                 message.value = "保存失败"
             } else {
                 message.value = "收下了，正在抓正文…"
-                repo.processNextExtractJob()
+                val ok = repo.processNextExtractJob()
+                // 抓到了正文就补摘要与标签（正文比开头那行标题信息量大得多）；
+                // 没抓到也不影响：链接已经存下，用户东西没丢
+                if (ok) enrichAfterExtract(id)
             }
             onDone()
         }
@@ -296,6 +306,54 @@ class InboxViewModel @Inject constructor(
 
     // ------------------------------------------------------------------
 
+    /**
+     * 给一条内容补摘要与标签（v0.10.0 接线）。
+     *
+     * 设计约束：
+     * - **安静降级**：没配 Key、模型挂了、网络不通 —— 一律吞掉，绝不影响录入。
+     *   用户已经在界面上看到"收下了"，不能因为 AI 环节失败就弹个报错吓他。
+     * - **不覆盖已有摘要**：用户手动生成过的摘要比自动的更可信。
+     * - 摘要与标签各自独立：一个失败不影响另一个。
+     */
+    private suspend fun enrich(id: Long, text: String) {
+        if (text.isBlank()) return
+
+        // 摘要：只在还没有摘要时补
+        val existing = repo.findById(id)?.summary
+        if (existing.isNullOrBlank()) {
+            when (val s = gateway.summarize(text)) {
+                is Outcome.Ok -> if (s.value.isNotBlank()) repo.setSummary(id, s.value)
+                is Outcome.Err -> Unit
+            }
+        }
+
+        // 标签：复用已有标签名，让模型倾向续用而不是每篇造新词
+        val existingNames = runCatching { db.tagDao().all().map { it.name } }.getOrDefault(emptyList())
+        when (val t = gateway.tag(text, existingNames)) {
+            is Outcome.Ok -> if (t.value.isNotEmpty()) repo.setTags(id, t.value)
+            is Outcome.Err -> Unit
+        }
+    }
+
+    /**
+     * 文章抓完正文后调用（正文比标题信息量大得多，值得重新补一次）。
+     */
+    fun enrichAfterExtract(itemId: Long) {
+        viewModelScope.launch {
+            val it = repo.findById(itemId) ?: return@launch
+            val content = it.rawText?.takeIf { c -> c.isNotBlank() } ?: return@launch
+            enrich(itemId, content)
+        }
+    }
+
+    /** 给一条内容补摘要与标签（供手动触发；失败静默） */
+    fun enrichNow(itemId: Long) {
+        viewModelScope.launch {
+            val it = repo.findById(itemId) ?: return@launch
+            enrich(itemId, it.summary ?: it.rawText ?: it.title)
+        }
+    }
+
     private suspend fun applyClassify(id: Long, r: ClassifyResult) {
         val now = Instant.now()
         val itemDao = db.itemDao()
@@ -364,12 +422,9 @@ class InboxViewModel @Inject constructor(
             else -> Unit
         }
 
-        // 摘要 + 标签异步补
+        // 摘要 + 标签异步补（统一入口，见 enrich）
         if (r.type == ItemType.ARTICLE || r.type == ItemType.NOTE) {
-            when (val s = gateway.summarize(r.noteText ?: r.title)) {
-                is Outcome.Ok -> repo.setSummary(id, s.value)
-                is Outcome.Err -> Unit
-            }
+            enrich(id, r.noteText ?: r.title)
         }
     }
 

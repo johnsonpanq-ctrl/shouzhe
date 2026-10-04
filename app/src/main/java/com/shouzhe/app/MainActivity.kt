@@ -273,6 +273,7 @@ private fun DetailRoute(itemId: Long, onBack: () -> Unit) {
             onSaveLedger = dvm::saveLedger,
             onRetryExtract = dvm::retryExtract,
             onSummarize = dvm::summarize,
+            onEnrich = dvm::enrichNow,
             onDelete = { dvm.delete(); onBack() },
             onDismissMessage = dvm::dismissMessage,
         )

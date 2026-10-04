@@ -298,13 +298,35 @@ class ItemRepository @Inject constructor(
         itemDao.updateSummary(id, summary, Instant.now().toEpochMilli())
     }
 
+    /**
+     * 给条目写 AI 标签（幂等）。
+     *
+     * 幂等性很关键：内容会被重复处理（重新抓取、手动重试摘要），
+     * 不能每次调用都往 item_tag 里堆一批重复关联。
+     *
+     * 做法：先清掉该条目上来源为 ai 的旧关联，再写新的。
+     * **只清 ai 的，用户手动打的标签（source=user）不动** —— 别替用户删东西。
+     */
     suspend fun setTags(itemId: Long, tags: List<String>) = withContext(Dispatchers.IO) {
         val now = Instant.now().toEpochMilli()
-        tags.forEach { name ->
+        val clean = cleanTags(tags)
+
+        // 清掉旧的 AI 关联（保留用户手动打的）
+        db.openHelper.writableDatabase.execSQL(
+            "DELETE FROM item_tag WHERE itemId = ? AND source = 'ai'",
+            arrayOf(itemId),
+        )
+        if (clean.isEmpty()) return@withContext
+
+        clean.forEach { name ->
             db.tagDao().insert(TagEntity(name = name, createdAt = now))
             val tag = db.tagDao().findByName(name) ?: return@forEach
             db.tagDao().link(ItemTagEntity(itemId = itemId, tagId = tag.id, source = "ai"))
         }
+        // 重算使用次数，避免长期累积成错数
+        db.openHelper.writableDatabase.execSQL(
+            "UPDATE tag SET useCount = (SELECT COUNT(*) FROM item_tag WHERE tagId = tag.id)"
+        )
     }
 
     // ------------------------------------------------------------------
@@ -380,4 +402,27 @@ class ItemRepository @Inject constructor(
     }
 
     enum class ExtractState { PENDING, RUNNING, SUCCESS, FAILED }
+
+    companion object {
+        /**
+         * 标签清洗（纯函数，便于单测）。
+         *
+         * 模型输出不可全信：可能带 `#`、带编号、带引号、写超长句子、
+         * 或者把同一个标签写两遍。这里统一收拾干净 —— 脏标签会污染标签字典。
+         */
+        fun cleanTags(raw: List<String>): List<String> = raw
+            .asSequence()
+            .map { it.trim() }
+            .map { it.removePrefix("#").removePrefix("-").trim() }
+            .map { it.trim('"', '\'', '「', '」', '“', '”', '，', ',', '。') }
+            .filter { it.isNotBlank() }
+            // 标签是"词"，不是句子：超过 12 个字的多半是模型没按格式返回
+            .filter { it.length <= 12 }
+            .distinct()
+            .take(MAX_TAGS)
+            .toList()
+
+        /** 一条内容最多挂 5 个 AI 标签 —— 与 Prompts.tagSystem 的要求一致 */
+        private const val MAX_TAGS = 5
+    }
 }

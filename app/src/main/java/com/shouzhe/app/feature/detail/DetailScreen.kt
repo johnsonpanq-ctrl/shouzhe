@@ -72,6 +72,8 @@ fun DetailScreen(
     onSaveLedger: () -> Unit,
     onRetryExtract: () -> Unit,
     onSummarize: () -> Unit,
+    /** 手动补摘要与标签（v0.10.0） */
+    onEnrich: () -> Unit,
     onDelete: () -> Unit,
     onDismissMessage: () -> Unit,
 ) {
@@ -94,6 +96,12 @@ fun DetailScreen(
         }
     }
 
+    // 普通提示（保存成功 / API Key 无效 / 模型出错等）用底部浮层显示。
+    // v0.10.0 修：之前只处理了 __OPEN_URL__ 前缀，其余 message 一律不显示 ——
+    // 用户在详情页点什么都"没反应"，这是假按钮的一种。
+    val toast = state.message?.takeIf { !it.startsWith("__OPEN_URL__") }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -142,7 +150,31 @@ fun DetailScreen(
                     onSave = onSaveLedger,
                 )
                 ItemType.ARTICLE -> ArticleDetail(state, item, onRetryExtract, onSummarize)
-                ItemType.NOTE -> NoteDetail(item, state.sourceImage)
+                ItemType.NOTE -> NoteDetail(item, state.sourceImage, onEnrich)
+            }
+        }
+    }
+
+        // 底部提示浮层
+        toast?.let { msg ->
+            androidx.compose.material3.Snackbar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+                action = {
+                    Text(
+                        "知道了",
+                        modifier = Modifier
+                            .clickable { onDismissMessage() }
+                            .padding(8.dp),
+                        color = e.brand,
+                    )
+                },
+            ) { Text(msg) }
+            LaunchedEffect(msg) {
+                kotlinx.coroutines.delay(2600)
+                onDismissMessage()
             }
         }
     }
@@ -760,7 +792,7 @@ private fun ArticleDetail(
 // ===========================================================================
 
 @Composable
-private fun NoteDetail(item: Item, sourceImage: Bitmap?) {
+private fun NoteDetail(item: Item, sourceImage: Bitmap?, onEnrich: () -> Unit) {
     val e = szExtras()
     // 笔记的 title 是 rawText 的前 40 字，内容短时两者相同 —— 避免重复显示
     val body = item.rawText?.takeIf { it.isNotBlank() && it != item.title }
@@ -792,11 +824,34 @@ private fun NoteDetail(item: Item, sourceImage: Bitmap?) {
             color = e.ink,
         )
 
+        // 标签（v0.10.0）
+        if (item.tags.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                item.tags.forEach { SzTag(it) }
+            }
+        }
+
         // 没认出金额时，截图就是全部内容 —— 必须看得见（v0.7.0）
         if (sourceImage != null) {
             Spacer(Modifier.height(18.dp))
             SourceImageBlock(sourceImage)
         }
+
+        // 手动补摘要/标签：AI 环节失败时用户得有个出口（v0.10.0）
+        Spacer(Modifier.height(20.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SzGhostButton(
+                text = if (item.tags.isEmpty() && item.summary.isNullOrBlank()) "生成摘要和标签" else "重新生成",
+                onClick = onEnrich,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "需要配置模型；没配 Key 时不会做任何事，也不会丢失内容。",
+            fontSize = 11.sp,
+            color = e.ink3,
+        )
     }
 }
 

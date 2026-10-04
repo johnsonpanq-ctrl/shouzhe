@@ -457,6 +457,13 @@ private fun NoteCard(item: Item, onClick: (Long) -> Unit) {
             }
             SzTimestamp(TimeParser.humanize(item.createdAt, Instant.now()))
         }
+        // 标签（v0.10.0 接线后才会真的有内容）
+        if (item.tags.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                item.tags.take(3).forEach { SzTag(it) }
+            }
+        }
     }
 }
 
